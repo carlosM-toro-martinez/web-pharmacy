@@ -53,7 +53,7 @@ function DashboardCajaComponent({ caja, refetch }) {
       >
         Caja
       </Typography> */}
-      {cajaState.isCajaVacia || cajaState.isCajaCerrada ? (
+      {/* {cajaState.isCajaVacia || cajaState.isCajaCerrada ? (
         <Box
           sx={{
             display: "flex",
@@ -65,7 +65,7 @@ function DashboardCajaComponent({ caja, refetch }) {
             Abrir caja
           </Button>
         </Box>
-      ) : null}
+      ) : null} */}
       <CarouselMoneyComponent
         caja={caja}
         refetch={refetch}

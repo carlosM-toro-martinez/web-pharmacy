@@ -70,11 +70,13 @@ const ProductSelectedComponent = ({
   const calcularSumaTotal = () =>
     productosDetallados.reduce((total, producto) => {
       const precio = calcularPrecio(producto);
+
       const cantidadActiva = calcularCantidadActiva(producto);
       if (producto.precioManual) {
         return total + precio;
       }
-      return total + precio * cantidadActiva;
+
+      return Number((total + precio * cantidadActiva).toFixed(2));
     }, 0);
 
   useEffect(() => {
@@ -197,7 +199,6 @@ const ProductSelectedComponent = ({
               const { cantUnitLimit, pesoLimit, newValue, metodoSeleccionado } =
                 producto;
               const totalSubCantidad = producto?.newValue?.totalSubCantidad;
-              console.log(newValue);
 
               return (
                 <TableRow key={index}>

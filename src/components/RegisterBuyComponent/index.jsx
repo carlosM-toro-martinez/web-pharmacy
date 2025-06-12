@@ -75,8 +75,8 @@ const RegisterBuyComponent = ({
         cantidad: cantidad ? cantidad : 0,
         precio_unitario: precio,
         peso: peso ? peso : 0,
-        subCantidad: subCantidad ? subCantidad * cantidad : 0,
-        cantidadPorCaja: subCantidad > 0 ? subCantidad : null,
+        subCantidad: subCantidad ? subCantidad * cantidad : cantidad * 1,
+        cantidadPorCaja: subCantidad > 0 ? subCantidad : 1,
         id_detalle_compra: response.id_detalle,
       };
       loteMutation.mutate(newLote);
@@ -127,8 +127,8 @@ const RegisterBuyComponent = ({
       cantidad: cantidad ? cantidad : 0,
       precio_unitario: precio,
       peso: peso ? peso : null,
-      subCantidad: subCantidad ? subCantidad * cantidad : 0,
-      cantidadPorCaja: subCantidad > 0 ? subCantidad : null,
+      subCantidad: subCantidad ? subCantidad * cantidad : cantidad * 1,
+      cantidadPorCaja: subCantidad > 0 ? subCantidad : 1,
       fecha_ingreso: getLocalDateTime(),
       fecha_compra: getLocalDateTime(),
       fecha_caducidad: fechaCaducidad,

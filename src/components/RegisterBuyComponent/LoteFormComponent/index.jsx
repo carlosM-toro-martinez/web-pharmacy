@@ -1,5 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { Grid, InputAdornment, TextField, Box, Button } from "@mui/material";
+import {
+  Grid,
+  InputAdornment,
+  TextField,
+  Box,
+  Button,
+  Snackbar,
+  Alert,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+} from "@mui/material";
 
 const LoteFormComponent = ({
   lote,
@@ -18,12 +30,18 @@ const LoteFormComponent = ({
   precioVenta,
   setPrecioVenta,
 }) => {
+  const [selectedPercent, setSelectedPercent] = useState(30);
   const [errors, setErrors] = useState({
     lote: false,
     fechaCaducidad: false,
     loteExists: false,
     caducidadPasada: false,
   });
+
+  useEffect(() => {
+    const nuevoPrecio = precio * (1 + selectedPercent / 100);
+    setPrecioVenta(Number(nuevoPrecio.toFixed(2)));
+  }, [precio, selectedPercent]);
 
   useEffect(() => {
     validateForm();
@@ -39,13 +57,13 @@ const LoteFormComponent = ({
 
     let hasErrors = false;
 
-    if (
-      loteData?.some((item) => item.numero_lote === lote) &&
-      !isLoteProveedorLocked
-    ) {
-      newErrors.loteExists = true;
-      hasErrors = true;
-    }
+    // if (
+    //   loteData?.some((item) => item.numero_lote === lote) &&
+    //   !isLoteProveedorLocked
+    // ) {
+    //   newErrors.loteExists = true;
+    //   hasErrors = true;
+    // }
 
     if (!lote && !isLoteProveedorLocked) {
       newErrors.lote = true;
@@ -66,7 +84,13 @@ const LoteFormComponent = ({
 
     setErrors(newErrors);
     setError(hasErrors);
+    console.log(errors.loteExists);
   };
+
+  const porcentajes = Array.from(
+    { length: (40 - 15) / 5 + 1 },
+    (_, i) => 15 + i * 5
+  );
 
   return (
     <Box
@@ -91,7 +115,7 @@ const LoteFormComponent = ({
           type="number"
           value={cantidad || ""}
           onChange={(e) => setCantidad(e.target.value)}
-          helperText="Ej. 3 paq de cocacola"
+          //helperText="Ej. 3 paq de cocacola"
           required
           fullWidth
         />
@@ -110,8 +134,8 @@ const LoteFormComponent = ({
           type="number"
           value={subCantidad || ""}
           onChange={(e) => setSubCantidad(e.target.value)}
-          helperText="Ej. 6 cocacolas por paq."
-          required
+          //helperText="Ej. 6 cocacolas por paq."
+          //required
           fullWidth
         />
       </Box>
@@ -129,7 +153,7 @@ const LoteFormComponent = ({
           type="number"
           value={precio || ""}
           onChange={(e) => setPrecio(e.target.value)}
-          helperText="Ej. 60 Bs por paq."
+          //helperText="Ej. 60 Bs por paq."
           InputProps={{
             endAdornment: <InputAdornment position="end">Bs</InputAdornment>,
           }}
@@ -141,6 +165,7 @@ const LoteFormComponent = ({
         sx={{
           flexBasis: { xs: "100%", sm: "50%", md: "33.33%", lg: "15%" },
           minWidth: 250,
+          display: "flex",
         }}
       >
         <TextField
@@ -155,7 +180,30 @@ const LoteFormComponent = ({
           }}
           fullWidth
         />
+        <FormControl size="small" sx={{ flexShrink: 0 }}>
+          <InputLabel id="label-proveedor">%</InputLabel>
+          <Select
+            labelId="label-proveedor"
+            label="%"
+            //value={proveedor}
+            value={selectedPercent}
+            onChange={(e) => setSelectedPercent(e.target.value)}
+          >
+            {porcentajes.map((p) => (
+              <MenuItem key={p} value={p}>
+                {p}%
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </Box>
+      {/* <Snackbar
+        open={errors.loteExists}
+        autoHideDuration={10000}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert severity={"error"}>Error el numero de lote ya existe</Alert>
+      </Snackbar> */}
     </Box>
   );
 };

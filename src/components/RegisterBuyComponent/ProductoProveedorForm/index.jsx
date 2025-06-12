@@ -96,36 +96,6 @@ const ProductoProveedorForm = ({
         whiteSpace: "nowrap",
       }}
     >
-      <Box
-        sx={{
-          flexBasis: { xs: "100%", sm: "50%", md: "33.33%", lg: "15%" },
-          display: "flex",
-          gap: 1,
-          minWidth: 250,
-        }}
-      >
-        <Button
-          onClick={generateRandomLote}
-          sx={{
-            whiteSpace: "nowrap",
-            fontWeight: "bold",
-            backgroundColor: "#2596be",
-            color: "#fff",
-            borderRadius: "3rem",
-          }}
-        >
-          gen
-        </Button>
-        <TextField
-          variant="outlined"
-          size="small"
-          label="Número de Lote"
-          value={lote}
-          onChange={(e) => {
-            setLote(e.target.value);
-          }}
-        />
-      </Box>
       <FormControl
         error={errors.producto}
         sx={{ minWidth: 200, flexShrink: 0 }}
@@ -178,6 +148,36 @@ const ProductoProveedorForm = ({
           )}
         />
       </FormControl>
+      <Box
+        sx={{
+          flexBasis: { xs: "100%", sm: "50%", md: "33.33%", lg: "15%" },
+          display: "flex",
+          gap: 1,
+          minWidth: 250,
+        }}
+      >
+        <Button
+          onClick={generateRandomLote}
+          sx={{
+            whiteSpace: "nowrap",
+            fontWeight: "bold",
+            backgroundColor: "#2596be",
+            color: "#fff",
+            borderRadius: "3rem",
+          }}
+        >
+          gen
+        </Button>
+        <TextField
+          variant="outlined"
+          size="small"
+          label="Número de Lote"
+          value={lote}
+          onChange={(e) => {
+            setLote(e.target.value);
+          }}
+        />
+      </Box>
 
       <FormControl size="small" sx={{ minWidth: 200, flexShrink: 0 }}>
         <InputLabel id="label-proveedor">Proveedor</InputLabel>
