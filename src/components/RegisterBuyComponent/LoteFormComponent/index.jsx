@@ -39,9 +39,15 @@ const LoteFormComponent = ({
   });
 
   useEffect(() => {
-    const nuevoPrecio = precio * (1 + selectedPercent / 100);
+    let nuevoPrecio;
+    if (subCantidad) {
+      nuevoPrecio = (precio / subCantidad) * (1 + selectedPercent / 100);
+    } else {
+      nuevoPrecio = precio * (1 + selectedPercent / 100);
+    }
+
     setPrecioVenta(Number(nuevoPrecio.toFixed(2)));
-  }, [precio, selectedPercent]);
+  }, [precio, selectedPercent, subCantidad]);
 
   useEffect(() => {
     validateForm();
