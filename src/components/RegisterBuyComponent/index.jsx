@@ -7,9 +7,9 @@ import RegistroTableComponent from "./RegistroTableComponent";
 import ProveedorModalComponent from "./ProveedorModalComponent";
 import ProductoModalComponent from "./ProductoModalComponent";
 import useStyles from "./RegisterBuy.styles";
-import detalleCompraAddServices from "../../async/services/post/detalleCompraAddServices";
-import loteAddServices from "../../async/services/post/loteAddServices";
-import buyLoteService from "../../async/services/get/buyLoteService";
+// import detalleCompraAddServices from "../../async/services/post/detalleCompraAddServices";
+// import loteAddServices from "../../async/services/post/loteAddServices";
+// import buyLoteService from "../../async/services/get/buyLoteService";
 import { useMutation, useQuery } from "react-query";
 import { getLocalDateTime } from "../../utils/getDate";
 import { MainContext } from "../../context/MainContext";
@@ -64,57 +64,57 @@ const RegisterBuyComponent = ({
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const detalleCompraMutation = useMutation(detalleCompraAddServices, {
-    onSuccess: (response) => {
-      setDetalleCompraId(response.id_detalle);
-      const newLote = {
-        id_producto: producto,
-        numero_lote: lote,
-        fecha_ingreso: getLocalDateTime(),
-        fecha_caducidad: fechaCaducidad,
-        cantidad: cantidad ? cantidad : 0,
-        precio_unitario: precio,
-        peso: peso ? peso : 0,
-        subCantidad: subCantidad ? subCantidad * cantidad : cantidad * 1,
-        cantidadPorCaja: subCantidad > 0 ? subCantidad : 1,
-        id_detalle_compra: response.id_detalle,
-      };
-      loteMutation.mutate(newLote);
-    },
-    onError: (error) => {
-      setSnackbar({
-        open: true,
-        message: `Error al guardar el detalle de compra: ${error.message}`,
-        severity: "error",
-      });
-    },
-  });
+  // const detalleCompraMutation = useMutation(detalleCompraAddServices, {
+  //   onSuccess: (response) => {
+  //     setDetalleCompraId(response.id_detalle);
+  //     const newLote = {
+  //       id_producto: producto,
+  //       numero_lote: lote,
+  //       fecha_ingreso: getLocalDateTime(),
+  //       fecha_caducidad: fechaCaducidad,
+  //       cantidad: cantidad ? cantidad : 0,
+  //       precio_unitario: precio,
+  //       peso: peso ? peso : 0,
+  //       subCantidad: subCantidad ? subCantidad * cantidad : cantidad * 1,
+  //       cantidadPorCaja: subCantidad > 0 ? subCantidad : 1,
+  //       id_detalle_compra: response.id_detalle,
+  //     };
+  //     loteMutation.mutate(newLote);
+  //   },
+  //   onError: (error) => {
+  //     setSnackbar({
+  //       open: true,
+  //       message: `Error al guardar el detalle de compra: ${error.message}`,
+  //       severity: "error",
+  //     });
+  //   },
+  // });
 
-  const loteMutation = useMutation(loteAddServices, {
-    onSuccess: () => {
-      setSnackbar({
-        open: true,
-        message: "Lote creado exitosamente!",
-        severity: "success",
-      });
-      setLoteNumber(lote);
-      setIsLoteProveedorLocked(true);
-      setFechaIngreso("");
-      setFechaCaducidad("");
-      setCantidad("");
-      setPrecio("");
-      setSubCantidad(null);
-      setPeso("");
-      setDetalleCompraId(null);
-    },
-    onError: (error) => {
-      setSnackbar({
-        open: true,
-        message: `Error al crear el lote: ${error.message}`,
-        severity: "error",
-      });
-    },
-  });
+  // const loteMutation = useMutation(loteAddServices, {
+  //   onSuccess: () => {
+  //     setSnackbar({
+  //       open: true,
+  //       message: "Lote creado exitosamente!",
+  //       severity: "success",
+  //     });
+  //     setLoteNumber(lote);
+  //     setIsLoteProveedorLocked(true);
+  //     setFechaIngreso("");
+  //     setFechaCaducidad("");
+  //     setCantidad("");
+  //     setPrecio("");
+  //     setSubCantidad(null);
+  //     setPeso("");
+  //     setDetalleCompraId(null);
+  //   },
+  //   onError: (error) => {
+  //     setSnackbar({
+  //       open: true,
+  //       message: `Error al crear el lote: ${error.message}`,
+  //       severity: "error",
+  //     });
+  //   },
+  // });
 
   const handleSave = () => {
     setLoteNumber(lote);
@@ -145,6 +145,8 @@ const RegisterBuyComponent = ({
     setSubCantidad(null);
     setPeso("");
     setDetalleCompraId(null);
+    setProducto(null);
+    setProductoName("");
   };
 
   const buyMutation = useMutation(buyAddService, {
@@ -271,6 +273,7 @@ const RegisterBuyComponent = ({
               fechaCaducidad={fechaCaducidad}
               setFechaCaducidad={setFechaCaducidad}
               loteData={lotes}
+              productoName={productoName}
             />
             <LoteFormComponent
               lote={lote}
@@ -316,15 +319,16 @@ const RegisterBuyComponent = ({
                 marginTop: "20px",
                 fontWeight: "bold",
               }}
-              disabled={
-                detalleCompraMutation.isLoading ||
-                loteMutation.isLoading ||
-                error
-              }
+              // disabled={
+              //   detalleCompraMutation.isLoading ||
+              //   loteMutation.isLoading ||
+              //   error
+              // }
             >
-              {detalleCompraMutation.isLoading || loteMutation.isLoading
+              {/* {detalleCompraMutation.isLoading || loteMutation.isLoading
                 ? "Guardando..."
-                : "Añadir"}
+                : "Añadir"} */}
+              Añadir
             </Button>
             <Button
               onClick={handleOpenProductoModal}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   FormControl,
   MenuItem,
@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import { Typography, Autocomplete, TextField } from "@mui/material";
+import MyAutocomplete from "../../MyAutocomplete";
 
 const ProductoProveedorForm = ({
   proveedor,
@@ -30,6 +31,7 @@ const ProductoProveedorForm = ({
   fechaCaducidad,
   setFechaCaducidad,
   loteData,
+  productoName,
 }) => {
   const [errors, setErrors] = useState({
     proveedor: false,
@@ -82,6 +84,8 @@ const ProductoProveedorForm = ({
       alert("No se pudo generar un número de lote único, intenta de nuevo.");
     }
   };
+  const productosMemo = useMemo(() => productos, [productos]);
+  console.log("productosMemo length", productosMemo.length, productosMemo);
 
   return (
     <Box
@@ -100,44 +104,22 @@ const ProductoProveedorForm = ({
         error={errors.producto}
         sx={{ minWidth: 200, flexShrink: 0 }}
       >
-        <Autocomplete
-          size="large"
-          options={productos}
+        {/* <Autocomplete
+          key="autocomplete-productos"
+          options={productosMemo}
           getOptionLabel={(opt) =>
-            `${opt.nombre} ${opt.forma_farmaceutica} ${opt.concentracion}`
+            `${opt?.nombre || ""} ${opt?.forma_farmaceutica || ""} ${
+              opt?.concentracion || ""
+            }`
           }
           filterOptions={(opts, { inputValue }) =>
-            opts.filter(
-              (p) =>
-                p.nombre.toLowerCase().includes(inputValue.toLowerCase()) ||
-                p.codigo_barra.includes(inputValue)
+            opts.filter((p) =>
+              p.nombre?.toLowerCase().includes(inputValue.toLowerCase())
             )
           }
-          onChange={(_, newVal) => {
-            if (newVal) {
-              setProducto(newVal.id_producto);
-              setProductoName(newVal.nombre);
-            }
-          }}
           isOptionEqualToValue={(opt, val) =>
             opt.id_producto === val.id_producto
           }
-          disableClearable
-          slotProps={{
-            popper: {
-              modifiers: [
-                {
-                  name: "customWidth",
-                  enabled: true,
-                  phase: "beforeWrite",
-                  requires: ["computeStyles"],
-                  fn: ({ state }) => {
-                    state.styles.popper.width = "400px";
-                  },
-                },
-              ],
-            },
-          }}
           renderInput={(params) => (
             <TextField
               {...params}
@@ -146,6 +128,23 @@ const ProductoProveedorForm = ({
               size="small"
             />
           )}
+        /> */}
+        <MyAutocomplete
+          options={productos}
+          getOptionLabel={(opt) =>
+            `${opt.nombre} ${opt.forma_farmaceutica ?? ""} ${
+              opt.concentracion ?? ""
+            }`
+          }
+          onChange={(opt) => {
+            setProducto(opt?.id_producto ?? null);
+            setProductoName(opt?.nombre ?? "");
+          }}
+          label="Producto"
+          placeholder="Buscar producto..."
+          disableClearable={true}
+          productoName={productoName}
+          producto={producto}
         />
       </FormControl>
       <Box
@@ -194,7 +193,11 @@ const ProductoProveedorForm = ({
           disabled={isLoteProveedorLocked}
         >
           {proveedores.map((prov) => (
-            <MenuItem key={prov.id_proveedor} value={prov.id_proveedor}>
+            <MenuItem
+              sx={{ textTransform: "uppercase" }}
+              key={prov.id_proveedor}
+              value={prov.id_proveedor}
+            >
               {prov.nombre}
             </MenuItem>
           ))}
