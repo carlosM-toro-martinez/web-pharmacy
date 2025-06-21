@@ -12,7 +12,7 @@ const headCells = [
     id: "codigo_barra",
     numeric: false,
     disablePadding: false,
-    label: "Código de Barras",
+    label: "Código",
   },
   {
     id: "Cantidad",

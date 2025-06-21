@@ -71,6 +71,7 @@ function MetricsMainComponent() {
 
   if (isLoading) return <Typography>Cargando datos...</Typography>;
   if (!data) return <Typography>No hay datos disponibles.</Typography>;
+  console.log(expiringCount);
 
   return (
     <Box sx={{ p: 3 }}>
@@ -105,7 +106,7 @@ function MetricsMainComponent() {
                 <strong>Producto</strong>
               </TableCell>
               <TableCell align="right">
-                <strong>Cantidad de cajas</strong>
+                <strong>Cantidad</strong>
               </TableCell>
               <TableCell align="center">
                 <strong>Fecha de caducidad</strong>

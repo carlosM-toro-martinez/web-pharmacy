@@ -26,6 +26,7 @@ import ventasTodayService from "../../async/services/get/ventasTodayService.js";
 import empty from "../../assets/images/empty.svg";
 function Ventas() {
   const { data, user } = useContext(MainContext);
+
   const {
     data: reportVentas,
     isLoading: isLoadingVentas,
@@ -153,6 +154,7 @@ function Ventas() {
                     reportData={reportVentas}
                     ventaToday={true}
                     refetchVentas={refetchVentas}
+                    caja={data}
                   />
                 ) : (
                   <img

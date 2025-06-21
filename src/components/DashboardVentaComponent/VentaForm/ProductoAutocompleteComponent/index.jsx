@@ -57,17 +57,19 @@ const ProductoAutocompleteComponent = ({
       >
         <Autocomplete
           options={productosConTotales || []}
-          // 1) getOptionLabel solo devuelve el texto “plano” que MUI usará para filtrar/mostar en el input
           getOptionLabel={(producto) => {
             const nombre = producto?.nombre?.toUpperCase() || "";
             const prov = producto?.proveedor?.nombre?.toUpperCase() || "";
-            return `${nombre} "${prov}" Stock. ${producto?.totalSubCantidad}u.`;
+            const forma = producto?.forma_farmaceutica?.toUpperCase() || "";
+            const conc = producto?.concentracion || "";
+            const cod = producto?.codigo_barra || "";
+            const stock = producto?.totalSubCantidad ?? 0;
+            return `${nombre} ${forma} ${conc} - “${prov}” [${cod}] Stock: ${stock}u.`;
           }}
           value={selectedValue}
           onChange={(event, newValue) => {
             if (newValue) {
               handleProductoChange(newValue.id_producto, newValue);
-              // setCantidad(); setCantidadPorUnidad(); si las necesitas
             }
             setInputValue("");
             setSelectedValue(null);
@@ -77,23 +79,27 @@ const ProductoAutocompleteComponent = ({
           isOptionEqualToValue={(option, value) =>
             option?.id_producto === value?.id_producto
           }
-          filterOptions={(options, { inputValue }) =>
-            options.filter(
-              (option) =>
-                option.nombre
-                  .toLowerCase()
-                  .includes(inputValue.toLowerCase()) ||
-                option.codigo_barra
+          filterOptions={(options, { inputValue }) => {
+            const lowerInput = inputValue.toLowerCase();
+            return options.filter((option) => {
+              return (
+                option?.nombre?.toLowerCase().includes(lowerInput) ||
+                option?.proveedor?.nombre?.toLowerCase().includes(lowerInput) ||
+                option?.codigo_barra?.toLowerCase().includes(lowerInput) ||
+                option?.forma_farmaceutica
                   ?.toLowerCase()
-                  .includes(inputValue.toLowerCase())
-            )
-          }
+                  .includes(lowerInput) ||
+                option?.concentracion?.toLowerCase().includes(lowerInput)
+              );
+            });
+          }}
           renderOption={(props, option) => {
             const nombre = option.nombre || "";
             const prov = option.proveedor?.nombre?.toUpperCase() || "";
             const stock = option.totalSubCantidad ?? 0;
-            const forma_farmaceutica = option?.forma_farmaceutica || "";
-            const concentracion = option?.concentracion || "";
+            const forma = option?.forma_farmaceutica || "";
+            const conc = option?.concentracion || "";
+            const cod = option?.codigo_barra || "";
 
             return (
               <Box
@@ -109,20 +115,17 @@ const ProductoAutocompleteComponent = ({
               >
                 <Typography
                   variant="body1"
-                  sx={{ fontWeight: "510", color: "#000" }}
+                  sx={{ fontWeight: 510, color: "#000", textAlign: "center" }}
                 >
-                  {nombre} {forma_farmaceutica} {concentracion}{" "}
-                  {prov && (
-                    <Typography
-                      component="span"
-                      variant="body1"
-                      sx={{ fontWeight: 500, color: "#000", ml: 0.5 }}
-                    >
-                      “{prov}”
-                    </Typography>
-                  )}
+                  {nombre} {forma} {conc}
+                  <Typography
+                    component="span"
+                    variant="body1"
+                    sx={{ fontWeight: 500, color: "#000", ml: 0.5 }}
+                  >
+                    “{prov}”
+                  </Typography>
                 </Typography>
-
                 <Typography
                   variant="caption"
                   sx={{ color: stock > 0 ? "green" : "red", mt: 0.3 }}

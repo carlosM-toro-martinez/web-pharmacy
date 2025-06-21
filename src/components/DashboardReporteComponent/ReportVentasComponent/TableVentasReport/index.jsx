@@ -278,7 +278,7 @@ function VentaRow({ venta, ventaToday, refetchVentas, caja, utilidades }) {
           severity: "success",
         });
         refetchVentas();
-        navigate("/movimiento-caja");
+        // navigate("/movimiento-caja");
       },
       onError: (error) => {
         setSnackbar({
@@ -306,6 +306,7 @@ function VentaRow({ venta, ventaToday, refetchVentas, caja, utilidades }) {
       id_detalle: detalle.id_detalle,
       id_caja: caja?.caja?.id_caja || 1,
       fecha_venta: getLocalDateTime(),
+      total: ventaAAnular?.total,
     }));
     if (transformVenta?.length === 0) {
       transformVenta = [

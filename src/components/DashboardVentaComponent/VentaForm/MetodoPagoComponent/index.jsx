@@ -19,7 +19,7 @@ function MetodoPagoComponent({ metodoPago, setMetodoPago }) {
         <MenuItem value="Contado">Contado</MenuItem>
         {/* <MenuItem value="Prestamo">Préstamo</MenuItem>
         <MenuItem value="Consignacion">Consignación</MenuItem> */}
-        <MenuItem value="QR">QR</MenuItem>
+        {/* <MenuItem value="QR">QR</MenuItem> */}
       </Select>
     </FormControl>
   );

@@ -130,7 +130,7 @@ function FormProduct({ handleClose, refetchProducts, productData }) {
           </Grid>
           <Grid item xs={12}>
             <TextField
-              label="Código de Barras"
+              label="Código"
               name="codigo_barra"
               variant="outlined"
               value={product.codigo_barra}
