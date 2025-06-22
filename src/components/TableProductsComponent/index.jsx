@@ -101,8 +101,14 @@ export default function TableProductsComponent({ productos, refetchProducts }) {
   };
 
   const { mutate } = useMutation(
-    ({ id, updatedPrice }) =>
-      detalleCompraUpdateServices(id, { precio_unitario: updatedPrice }),
+    ({ id, updatedPrice, updatedSalePrice, idLote }) =>
+      detalleCompraUpdateServices(id, {
+        ...(updatedPrice !== undefined && { precio_unitario: updatedPrice }),
+        ...(updatedSalePrice !== undefined && {
+          precioVenta: updatedSalePrice,
+        }),
+        ...(idLote && { id_lote: idLote }),
+      }),
     {
       onSuccess: () => {
         handleCloseModals();
@@ -187,35 +193,12 @@ export default function TableProductsComponent({ productos, refetchProducts }) {
                     </TableCell>
                     <TableCell
                       sx={{
-                        color:
-                          row.stock > 0 && row.subCantidad === 0
-                            ? "green"
-                            : row.stock > 0
-                            ? "green"
-                            : "red",
+                        color: row.stock > 0 ? "green" : "red",
                       }}
                     >
-                      {row.stock > 0 && row.subCantidad === 0
-                        ? row.subCantidad
-                        : row.stock !== null
+                      {row.subCantidad === row.stock
                         ? row.stock
-                        : "N/A"}
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        color:
-                          row.stock > 0 && row.subCantidad === 0
-                            ? "green"
-                            : row.subCantidad > 0
-                            ? "green"
-                            : "red",
-                      }}
-                    >
-                      {row.stock > 0 && row.subCantidad === 0
-                        ? row.stock
-                        : row.subCantidad !== null
-                        ? row.subCantidad
-                        : "N/A"}
+                        : row.subCantidad ?? "N/A"}
                     </TableCell>
 
                     <TableCell align="left">

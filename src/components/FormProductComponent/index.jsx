@@ -27,7 +27,7 @@ function FormProduct({ handleClose, refetchProducts, productData }) {
     nombre: productData ? productData.nombre : "",
     codigo_barra: productData ? productData.codigo_barra : "",
     id_categoria: productData ? productData.id_categoria : "",
-    precio: productData ? productData.precio : "",
+    precio: productData ? productData.precio : 0,
     stock: productData ? productData.stock : 0,
     forma_farmaceutica: productData ? productData.forma_farmaceutica : "",
     concentracion: productData ? productData.concentracion : "",
@@ -46,7 +46,7 @@ function FormProduct({ handleClose, refetchProducts, productData }) {
         nombre: productData.nombre,
         codigo_barra: productData.codigo_barra,
         id_categoria: productData.id_categoria,
-        precio: productData.precio,
+        precio: productData.precio ? productData.precio : 0,
         stock: productData.stock,
         forma_farmaceutica: productData.forma_farmaceutica,
         concentracion: productData.concentracion,
@@ -140,7 +140,7 @@ function FormProduct({ handleClose, refetchProducts, productData }) {
               className={classes.input}
             />
           </Grid>
-          <Grid item xs={12}>
+          {/* <Grid item xs={12}>
             <TextField
               label="Precio salida de almacen"
               name="precio"
@@ -153,7 +153,7 @@ function FormProduct({ handleClose, refetchProducts, productData }) {
               type="number"
               inputProps={{ step: "0.01" }}
             />
-          </Grid>
+          </Grid> */}
           <Grid item xs={12}>
             <FormControl fullWidth required>
               <InputLabel id="categoria-label">Categoría</InputLabel>

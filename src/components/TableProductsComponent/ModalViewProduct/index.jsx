@@ -15,7 +15,6 @@ import {
   CircularProgress,
   Typography,
   TextField,
-  IconButton,
   Box,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
@@ -23,7 +22,7 @@ import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Cancel";
 import DeleteIcon from "@mui/icons-material/Delete";
 import productosInventarioService from "../../../async/services/get/productosInventarioService";
-import { useMutation, useQuery } from "react-query";
+import { useQuery } from "react-query";
 
 function ModalViewProduct({
   handleClose,
@@ -35,7 +34,9 @@ function ModalViewProduct({
   mutate,
   mutateDelete,
 }) {
-  const { data, isLoading, error, refetch } = useQuery(
+  const [editedSalePrice, setEditedSalePrice] = useState("");
+
+  const { data, isLoading, error } = useQuery(
     `InventarioProducts`,
     () => productosInventarioService(product?.id_producto),
     {
@@ -68,29 +69,41 @@ function ModalViewProduct({
     );
   }
 
-  if (!data) {
-    return null;
-  }
-  const handleEdit = (index, precioActual) => {
+  if (!data) return null;
+
+  const handleEdit = (index, precioActual, precioVenta) => {
     setEditingRow(index);
     setEditedPrice(precioActual);
+    setEditedSalePrice(precioVenta);
   };
 
   const handleSave = (index) => {
-    const item = data.inventarios[index].detalleCompra.id_detalle;
+    const inventario = data.inventarios[index];
+    const item = inventario.detalleCompra.id_detalle;
+    const idLote = inventario.id_lote;
 
-    if (item && editedPrice) {
-      mutate({ id: item, updatedPrice: parseFloat(editedPrice) });
+    if (item) {
+      mutate({
+        id: item,
+        updatedPrice: editedPrice !== "" ? parseFloat(editedPrice) : undefined,
+        updatedSalePrice:
+          editedSalePrice !== "" ? parseFloat(editedSalePrice) : undefined,
+        idLote: idLote,
+      });
     }
+
     setEditingRow(null);
+    setEditedPrice("");
+    setEditedSalePrice("");
   };
 
   const handleCancel = () => {
     setEditingRow(null);
     setEditedPrice("");
+    setEditedSalePrice("");
   };
 
-  const handleDelete = (inventario, index) => {
+  const handleDelete = (inventario) => {
     const dataDelete = {
       id_producto: inventario.detalleCompra.id_producto,
       id_lote: inventario.id_lote,
@@ -108,34 +121,24 @@ function ModalViewProduct({
     });
   };
 
-  function calcularUtilidad(cantidad, precioTotalCompra, precioVentaUnidad) {
-    if (cantidad <= 0) {
-      console.warn("La cantidad debe ser mayor que cero");
-      return 0;
-    }
+  const calcularUtilidad = (cantidad, precioTotalCompra, precioVentaUnidad) => {
+    if (cantidad <= 0) return 0;
     const costoUnitario = precioTotalCompra / cantidad;
     const utilidadUnidad = precioVentaUnidad - costoUnitario;
-    const utilidadTotal = utilidadUnidad * cantidad;
-    const utilidadUnidad2decimales = Number(utilidadUnidad.toFixed(2));
-    return utilidadUnidad2decimales;
-  }
+    return Number(utilidadUnidad.toFixed(2));
+  };
 
   return (
     <Dialog
       open={true}
       onClose={handleClose}
-      PaperProps={{
-        sx: {
-          width: "70rem",
-          maxWidth: "none",
-        },
-      }}
+      PaperProps={{ sx: { width: "70rem", maxWidth: "none" } }}
     >
       <DialogTitle>Lotes</DialogTitle>
       <DialogContent>
         <Typography
           variant="h6"
-          style={{
+          sx={{
             textTransform: "uppercase",
             fontWeight: "bold",
             fontSize: "1rem",
@@ -143,53 +146,33 @@ function ModalViewProduct({
         >
           Producto: {data.producto}
         </Typography>
-        <TableContainer component={Paper} style={{ marginTop: "1rem" }}>
+        <TableContainer component={Paper} sx={{ mt: 2 }}>
           <Table>
-            <TableHead style={{ backgroundColor: "#f5f5f5" }}>
+            <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
               <TableRow>
-                <TableCell style={{ fontWeight: "bold" }}>
-                  Número de Lote
-                </TableCell>
-                <TableCell style={{ fontWeight: "bold" }}>
-                  Cantidad (c/p)
-                </TableCell>
-                <TableCell style={{ fontWeight: "bold" }}>
-                  cant. por caja
-                </TableCell>
-                <TableCell style={{ fontWeight: "bold" }}>Unidades</TableCell>
-                <TableCell style={{ fontWeight: "bold" }}>
-                  Utilidades p(u)
-                </TableCell>
-                <TableCell style={{ fontWeight: "bold" }}>
-                  Precio de venta(u)
-                </TableCell>
-                <TableCell style={{ fontWeight: "bold" }}>Caducidad</TableCell>
-                <TableCell style={{ fontWeight: "bold" }}>Ingreso</TableCell>
-                <TableCell style={{ fontWeight: "bold" }}>
-                  Precio de compra(c)
-                </TableCell>
-                <TableCell style={{ fontWeight: "bold" }}>Acciones</TableCell>
+                <TableCell>Número de Lote</TableCell>
+                {/* <TableCell>Cantidad (c/p)</TableCell> */}
+                {/* <TableCell>cant. por caja</TableCell> */}
+                <TableCell>Unidades</TableCell>
+                <TableCell>Utilidades p(u)</TableCell>
+                <TableCell>Precio de venta(u)</TableCell>
+                <TableCell>Caducidad</TableCell>
+                <TableCell>Ingreso</TableCell>
+                <TableCell>Precio de compra(c)</TableCell>
+                <TableCell>Acciones</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {data.inventarios.map((inventario, index) => (
                 <TableRow key={index}>
                   <TableCell>{inventario.numero_lote}</TableCell>
-                  <TableCell style={{ fontWeight: "bold" }}>
+                  {/* <TableCell>
                     {inventario.cantidad > 0 && inventario.subCantidad === 0
                       ? inventario.subCantidad
                       : inventario.cantidad}
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: "bold" }}>
-                    {inventario.cantidadPorCaja
-                      ? inventario.cantidadPorCaja
-                      : 0}
-                  </TableCell>
-                  <TableCell
-                    style={{
-                      fontWeight: "bold",
-                    }}
-                  >
+                  </TableCell> */}
+                  {/* <TableCell>{inventario.cantidadPorCaja ?? 0}</TableCell> */}
+                  <TableCell>
                     {inventario.cantidad > 0 && inventario.subCantidad === 0
                       ? inventario.cantidad
                       : inventario.subCantidad}
@@ -203,21 +186,31 @@ function ModalViewProduct({
                       inventario.precioVenta
                     )}
                   </TableCell>
-                  <TableCell sx={{ fontWeight: "bold" }}>
-                    {inventario.precioVenta ? inventario.precioVenta : 0}
+                  <TableCell>
+                    {editingRow === index ? (
+                      <TextField
+                        value={editedSalePrice}
+                        onChange={(e) => setEditedSalePrice(e.target.value)}
+                        type="number"
+                        variant="outlined"
+                        size="small"
+                        sx={{ width: "8rem" }}
+                      />
+                    ) : (
+                      inventario.precioVenta ?? 0
+                    )}
                   </TableCell>
-
                   <TableCell sx={{ color: "orange" }}>
                     {inventario?.fecha_caducidad
                       ?.split("T")[0]
-                      .split("-")
+                      ?.split("-")
                       .reverse()
                       .join("/")}
                   </TableCell>
                   <TableCell>
                     {inventario?.fecha_ingreso
                       ?.split("T")[0]
-                      .split("-")
+                      ?.split("-")
                       .reverse()
                       .join("/")}
                   </TableCell>
@@ -237,7 +230,7 @@ function ModalViewProduct({
                   </TableCell>
                   <TableCell>
                     {editingRow === index ? (
-                      <Box style={{ display: "flex", gap: 1 }}>
+                      <Box sx={{ display: "flex", gap: 1 }}>
                         <Button
                           onClick={() => handleSave(index)}
                           size="small"
@@ -247,12 +240,10 @@ function ModalViewProduct({
                             width: "2rem",
                             bgcolor: "primary.main",
                             color: "#fff",
-                            "&:hover": { bgcolor: "primary.dark" },
                           }}
                         >
                           <SaveIcon fontSize="small" />
                         </Button>
-
                         <Button
                           onClick={handleCancel}
                           size="small"
@@ -262,19 +253,19 @@ function ModalViewProduct({
                             width: "2rem",
                             bgcolor: "error.main",
                             color: "#fff",
-                            "&:hover": { bgcolor: "error.dark" },
                           }}
                         >
                           <CancelIcon fontSize="small" />
                         </Button>
                       </Box>
                     ) : (
-                      <Box style={{ display: "flex", gap: 1 }}>
+                      <Box sx={{ display: "flex", gap: 1 }}>
                         <Button
                           onClick={() =>
                             handleEdit(
                               index,
-                              inventario.detalleCompra.precio_unitario
+                              inventario.detalleCompra.precio_unitario,
+                              inventario.precioVenta
                             )
                           }
                           size="small"
@@ -284,14 +275,12 @@ function ModalViewProduct({
                             width: "2rem",
                             bgcolor: "primary.main",
                             color: "#fff",
-                            "&:hover": { bgcolor: "primary.dark" },
                           }}
                         >
                           <EditIcon fontSize="small" />
                         </Button>
-
                         <Button
-                          onClick={() => handleDelete(inventario, index)}
+                          onClick={() => handleDelete(inventario)}
                           size="small"
                           variant="contained"
                           sx={{
@@ -299,7 +288,6 @@ function ModalViewProduct({
                             width: "2rem",
                             bgcolor: "error.main",
                             color: "#fff",
-                            "&:hover": { bgcolor: "error.dark" },
                           }}
                         >
                           <DeleteIcon fontSize="small" />

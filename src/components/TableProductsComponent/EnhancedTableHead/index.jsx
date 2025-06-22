@@ -14,12 +14,12 @@ const headCells = [
     disablePadding: false,
     label: "Código",
   },
-  {
-    id: "Cantidad",
-    numeric: true,
-    disablePadding: false,
-    label: "Cantidad (Caja/Paquete)",
-  },
+  // {
+  //   id: "Cantidad",
+  //   numeric: true,
+  //   disablePadding: false,
+  //   label: "Cantidad (Caja/Paquete)",
+  // },
   {
     id: "Cantidad (u)",
     numeric: true,
