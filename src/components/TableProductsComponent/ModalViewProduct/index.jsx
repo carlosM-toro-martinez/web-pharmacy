@@ -16,6 +16,8 @@ import {
   Typography,
   TextField,
   Box,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
@@ -33,8 +35,11 @@ function ModalViewProduct({
   setEditedPrice,
   mutate,
   mutateDelete,
+  proveedoresData,
 }) {
   const [editedSalePrice, setEditedSalePrice] = useState("");
+  const [editedProviderId, setEditedProviderId] = useState("");
+  console.log(proveedoresData);
 
   const { data, isLoading, error } = useQuery(
     `InventarioProducts`,
@@ -71,10 +76,11 @@ function ModalViewProduct({
 
   if (!data) return null;
 
-  const handleEdit = (index, precioActual, precioVenta) => {
+  const handleEdit = (index, precioActual, precioVenta, proveedorId) => {
     setEditingRow(index);
     setEditedPrice(precioActual);
     setEditedSalePrice(precioVenta);
+    setEditedProviderId(proveedorId ?? "");
   };
 
   const handleSave = (index) => {
@@ -89,18 +95,20 @@ function ModalViewProduct({
         updatedSalePrice:
           editedSalePrice !== "" ? parseFloat(editedSalePrice) : undefined,
         idLote: idLote,
+        idProveedor: editedProviderId || undefined,
       });
     }
-
     setEditingRow(null);
     setEditedPrice("");
     setEditedSalePrice("");
+    setEditedProviderId("");
   };
 
   const handleCancel = () => {
     setEditingRow(null);
     setEditedPrice("");
     setEditedSalePrice("");
+    setEditedProviderId("");
   };
 
   const handleDelete = (inventario) => {
@@ -127,6 +135,7 @@ function ModalViewProduct({
     const utilidadUnidad = precioVentaUnidad - costoUnitario;
     return Number(utilidadUnidad.toFixed(2));
   };
+  console.log(data);
 
   return (
     <Dialog
@@ -159,6 +168,8 @@ function ModalViewProduct({
                 <TableCell>Caducidad</TableCell>
                 <TableCell>Ingreso</TableCell>
                 <TableCell>Precio de compra(c)</TableCell>
+                <TableCell>Proveedor</TableCell>
+
                 <TableCell>Acciones</TableCell>
               </TableRow>
             </TableHead>
@@ -172,11 +183,7 @@ function ModalViewProduct({
                       : inventario.cantidad}
                   </TableCell> */}
                   {/* <TableCell>{inventario.cantidadPorCaja ?? 0}</TableCell> */}
-                  <TableCell>
-                    {inventario.cantidad > 0 && inventario.subCantidad === 0
-                      ? inventario.cantidad
-                      : inventario.subCantidad}
-                  </TableCell>
+                  <TableCell>{inventario.subCantidad}</TableCell>
                   <TableCell sx={{ fontWeight: "bold", color: "green" }}>
                     {calcularUtilidad(
                       inventario.detalleCompra.cantidad *
@@ -224,8 +231,32 @@ function ModalViewProduct({
                         size="small"
                         sx={{ width: "8rem" }}
                       />
+                    ) : inventario.cantidadPorCaja ? (
+                      inventario.detalleCompra.precio_unitario /
+                      inventario.cantidadPorCaja
                     ) : (
                       inventario.detalleCompra.precio_unitario
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {editingRow === index ? (
+                      <Select
+                        value={editedProviderId}
+                        onChange={(e) => setEditedProviderId(e.target.value)}
+                        size="small"
+                        fullWidth
+                      >
+                        {proveedoresData.map((prov) => (
+                          <MenuItem
+                            key={prov.id_proveedor}
+                            value={prov.id_proveedor}
+                          >
+                            {prov.nombre}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    ) : (
+                      inventario?.detalleCompra?.proveedor?.nombre
                     )}
                   </TableCell>
                   <TableCell>

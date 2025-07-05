@@ -24,6 +24,8 @@ import CreateMovementInventario from "./pages/MovimientoInventario/CreateMovemen
 import { Box } from "@mui/material";
 import Theme from "./theme/Theme";
 import ReportProveedoresComponent from "./components/DashboardReporteComponent/ReportProveedoresComponent";
+import ReportProductosComponent from "./components/DashboardReporteComponent/ReportProductosComponent";
+import EditProductProviders from "./pages/Almacenes/EditProductProviders";
 
 function App() {
   const queryClient = new QueryClient();
@@ -50,6 +52,10 @@ function App() {
                     path="proveedor"
                     element={<ReportProveedoresComponent />}
                   />
+                  <Route
+                    path="producto"
+                    element={<ReportProductosComponent />}
+                  />
                 </Route>
               </Route>
 
@@ -60,7 +66,16 @@ function App() {
               >
                 <Route path="/almacenes/crear" element={<CreateAlmacenes />} />
               </Route>
-
+              {/* <Route
+                element={
+                  <ProtectedRoute allowedPermissions={["gestion de compras"]} />
+                }
+              >
+                <Route
+                  path="/almacenes/proveedor"
+                  element={<EditProductProviders />}
+                />
+              </Route> */}
               <Route
                 element={<ProtectedRoute allowedPermissions={["inventario"]} />}
               >

@@ -179,29 +179,26 @@ const ProductoProveedorForm = ({
       </Box>
 
       <FormControl size="small" sx={{ minWidth: 200, flexShrink: 0 }}>
-        <InputLabel id="label-proveedor">Proveedor</InputLabel>
-        <Select
-          labelId="label-proveedor"
-          label="Proveedor"
-          value={proveedor}
-          onChange={(e) => {
-            setProveedor(e.target.value);
-            setProveedorName(
-              e.target.children[e.target.selectedIndex].textContent
-            );
+        <Autocomplete
+          size="small"
+          sx={{ minWidth: 200, flexShrink: 0 }}
+          options={proveedores}
+          getOptionLabel={(option) => option.nombre.toUpperCase()}
+          value={
+            proveedores.find((prov) => prov.id_proveedor === proveedor) || null
+          }
+          onChange={(event, newValue) => {
+            if (newValue) {
+              setProveedor(newValue.id_proveedor);
+              setProveedorName(newValue.nombre);
+            } else {
+              setProveedor("");
+              setProveedorName("");
+            }
           }}
           disabled={isLoteProveedorLocked}
-        >
-          {proveedores.map((prov) => (
-            <MenuItem
-              sx={{ textTransform: "uppercase" }}
-              key={prov.id_proveedor}
-              value={prov.id_proveedor}
-            >
-              {prov.nombre}
-            </MenuItem>
-          ))}
-        </Select>
+          renderInput={(params) => <TextField {...params} label="Proveedor" />}
+        />
       </FormControl>
       <Box
         sx={{

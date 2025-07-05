@@ -140,7 +140,7 @@ function DashboardVentaComponent({
         refetchCaja();
         if (cancelForm) cancelForm();
         if (setRestoreDenom) setRestoreDenom();
-        handlePrint();
+        // handlePrint();
       },
       onError: (error) => {
         setSnackbar({

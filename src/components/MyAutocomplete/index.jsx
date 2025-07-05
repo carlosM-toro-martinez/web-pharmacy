@@ -12,6 +12,8 @@ const useStyles = makeStyles((theme) => ({
     width: "100%",
     maxWidth: 210,
     fontFamily: "Roboto, Arial, sans-serif",
+    display: "flex",
+    alignItems: "center",
   },
   label: {
     fontSize: 14,
@@ -102,6 +104,15 @@ const useStyles = makeStyles((theme) => ({
     right: 0,
     zIndex: 20000,
   },
+  clearLeft: {
+    background: "none",
+    border: "none",
+    fontSize: 16,
+    cursor: "pointer",
+    color: theme.palette.grey[500],
+    marginRight: 4,
+    padding: 0,
+  },
 }));
 
 export default function MyAutocomplete({
@@ -187,6 +198,9 @@ export default function MyAutocomplete({
 
   return (
     <div className={classes.root} ref={anchorRef}>
+      <div className={classes.clearLeft} onClick={clearInput} title="Limpiar">
+        ×
+      </div>
       <div className={classes.inputWrapper}>
         <InputBase
           className={classes.input}

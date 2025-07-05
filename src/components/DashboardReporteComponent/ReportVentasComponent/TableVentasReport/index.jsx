@@ -278,7 +278,6 @@ function VentaRow({ venta, ventaToday, refetchVentas, caja, utilidades }) {
           severity: "success",
         });
         refetchVentas();
-        // navigate("/movimiento-caja");
       },
       onError: (error) => {
         setSnackbar({
@@ -321,6 +320,7 @@ function VentaRow({ venta, ventaToday, refetchVentas, caja, utilidades }) {
 
     ventaMutation.mutate(transformVenta);
   };
+  const soloHora = new Date(venta?.fecha_venta).toLocaleTimeString();
 
   return (
     <>
@@ -335,7 +335,7 @@ function VentaRow({ venta, ventaToday, refetchVentas, caja, utilidades }) {
           </IconButton>
         </TableCell>
         <TableCell>
-          {new Date(venta?.fecha_venta).toLocaleDateString()}
+          {new Date(venta?.fecha_venta).toLocaleDateString()} {soloHora}
         </TableCell>
         <TableCell>{`${venta?.cliente?.nombre} ${
           venta.cliente.apellido ? venta?.cliente?.apellido : ""
@@ -380,7 +380,7 @@ function VentaRow({ venta, ventaToday, refetchVentas, caja, utilidades }) {
                 <TableHead>
                   <TableRow>
                     <TableCell>Producto</TableCell>
-                    <TableCell>Cantidad</TableCell>
+                    {/* <TableCell>Cantidad</TableCell> */}
                     <TableCell>Cantidad por Unidad</TableCell>
                     <TableCell>Precio Unitario</TableCell>
                   </TableRow>
@@ -389,7 +389,7 @@ function VentaRow({ venta, ventaToday, refetchVentas, caja, utilidades }) {
                   {venta.detallesVenta.map((detalle, index) => (
                     <TableRow key={index}>
                       <TableCell>{detalle?.producto?.nombre}</TableCell>
-                      <TableCell>{detalle.cantidad}</TableCell>
+                      {/* <TableCell>{detalle.cantidad}</TableCell> */}
                       <TableCell>{detalle.subCantidad}</TableCell>
                       <TableCell>{detalle.precio_unitario}</TableCell>
                     </TableRow>

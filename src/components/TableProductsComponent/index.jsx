@@ -28,7 +28,11 @@ import ProductoModalComponent from "../RegisterBuyComponent/ProductoModalCompone
 
 const ITEM_HEIGHT = 48;
 
-export default function TableProductsComponent({ productos, refetchProducts }) {
+export default function TableProductsComponent({
+  productos,
+  refetchProducts,
+  proveedoresData,
+}) {
   const classes = useStyles();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
@@ -44,6 +48,7 @@ export default function TableProductsComponent({ productos, refetchProducts }) {
   const [editedPrice, setEditedPrice] = useState("");
 
   const [openProductoModal, setOpenProductoModal] = useState(false);
+  const [showMissingOnly, setShowMissingOnly] = useState(false);
 
   const handleOpenProductoModal = () => setOpenProductoModal(true);
   const handleCloseProductoModal = () => setOpenProductoModal(false);
@@ -65,14 +70,26 @@ export default function TableProductsComponent({ productos, refetchProducts }) {
     setPage(0);
   };
 
+  const toggleMissingOnly = () => {
+    setShowMissingOnly((prev) => !prev);
+    setPage(0);
+  };
+
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
     setPage(0);
   };
 
-  const filteredProducts = productos.filter((producto) =>
-    producto.nombre?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredProducts = productos
+    .filter((producto) =>
+      producto.nombre?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (!showMissingOnly) return 0;
+      const aVal = a.subCantidad ?? Infinity;
+      const bVal = b.subCantidad ?? Infinity;
+      return aVal - bVal;
+    });
 
   const visibleRows = filteredProducts.slice(
     page * rowsPerPage,
@@ -101,13 +118,14 @@ export default function TableProductsComponent({ productos, refetchProducts }) {
   };
 
   const { mutate } = useMutation(
-    ({ id, updatedPrice, updatedSalePrice, idLote }) =>
+    ({ id, updatedPrice, updatedSalePrice, idLote, idProveedor }) =>
       detalleCompraUpdateServices(id, {
         ...(updatedPrice !== undefined && { precio_unitario: updatedPrice }),
         ...(updatedSalePrice !== undefined && {
           precioVenta: updatedSalePrice,
         }),
         ...(idLote && { id_lote: idLote }),
+        ...(idProveedor && { id_proveedor: idProveedor }),
       }),
     {
       onSuccess: () => {
@@ -145,6 +163,24 @@ export default function TableProductsComponent({ productos, refetchProducts }) {
 
   return (
     <Box className={classes.root}>
+      <Box
+        sx={{
+          display: "flex",
+          gap: 2,
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          padding: 2,
+        }}
+      >
+        <Button
+          variant="contained"
+          color={showMissingOnly ? "secondary" : "primary"}
+          onClick={toggleMissingOnly}
+          sx={{ minWidth: 250, height: 56 }}
+        >
+          {showMissingOnly ? "Ver todos los productos" : "Ordenar por cantidad"}
+        </Button>
+      </Box>
       <Button
         onClick={handleOpenProductoModal}
         style={{
@@ -296,6 +332,7 @@ export default function TableProductsComponent({ productos, refetchProducts }) {
           setEditedPrice={setEditedPrice}
           mutate={mutate}
           mutateDelete={mutateDelete}
+          proveedoresData={proveedoresData}
         />
       )}
     </Box>

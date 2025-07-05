@@ -38,6 +38,7 @@ const ProductoAutocompleteComponent = ({
       }
     }
   };
+  console.log(productosConTotales);
 
   return (
     <FormControl fullWidth>
@@ -80,17 +81,21 @@ const ProductoAutocompleteComponent = ({
             option?.id_producto === value?.id_producto
           }
           filterOptions={(options, { inputValue }) => {
-            const lowerInput = inputValue.toLowerCase();
+            const searchWords = inputValue.toLowerCase().trim().split(/\s+/);
+
             return options.filter((option) => {
-              return (
-                option?.nombre?.toLowerCase().includes(lowerInput) ||
-                option?.proveedor?.nombre?.toLowerCase().includes(lowerInput) ||
-                option?.codigo_barra?.toLowerCase().includes(lowerInput) ||
-                option?.forma_farmaceutica
-                  ?.toLowerCase()
-                  .includes(lowerInput) ||
-                option?.concentracion?.toLowerCase().includes(lowerInput)
-              );
+              const combined = [
+                option?.nombre,
+                option?.proveedor?.nombre,
+                option?.codigo_barra,
+                option?.forma_farmaceutica,
+                option?.concentracion,
+              ]
+                .filter(Boolean)
+                .join(" ")
+                .toLowerCase();
+
+              return searchWords.every((word) => combined.includes(word));
             });
           }}
           renderOption={(props, option) => {
@@ -100,6 +105,7 @@ const ProductoAutocompleteComponent = ({
             const forma = option?.forma_farmaceutica || "";
             const conc = option?.concentracion || "";
             const cod = option?.codigo_barra || "";
+            const precio = option?.inventarios[0]?.lote?.precioVenta || "";
 
             return (
               <Box
@@ -131,6 +137,12 @@ const ProductoAutocompleteComponent = ({
                   sx={{ color: stock > 0 ? "green" : "red", mt: 0.3 }}
                 >
                   Stock: {stock} u.
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{ color: stock > 0 ? "green" : "red", mt: 0.3 }}
+                >
+                  Precio: {precio} Bs.
                 </Typography>
               </Box>
             );
