@@ -38,7 +38,6 @@ const ProductoAutocompleteComponent = ({
       }
     }
   };
-  console.log(productosConTotales);
 
   return (
     <FormControl fullWidth>

@@ -62,7 +62,6 @@ const TicketComponent = forwardRef(({ productos, totalPrice }, ref) => {
         const precio = parseFloat(lote?.precioVenta || 0);
         const cantidad = item.cantidadPorUnidad || 0;
         const total = (cantidad * precio).toFixed(2);
-        console.log(item);
         return (
           <Box key={index} className={classes.producto}>
             <Typography className={classes.nombre}>

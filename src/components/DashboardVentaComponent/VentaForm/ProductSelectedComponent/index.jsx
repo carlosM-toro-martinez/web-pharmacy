@@ -244,11 +244,21 @@ const ProductSelectedComponent = ({
                               totalSubCantidad
                             )
                           }
-                          sx={{ width: "40%" }}
+                          sx={{
+                            width: "10ch",
+                            "& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button":
+                              {
+                                WebkitAppearance: "none",
+                                margin: 0,
+                              },
+                            "& input[type=number]": {
+                              MozAppearance: "textfield",
+                            },
+                          }}
                           inputProps={{
                             max: totalSubCantidad,
                           }}
-                          fullWidth
+                          fullWidth={false}
                         />
                       </>
                     )}

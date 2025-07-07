@@ -101,6 +101,23 @@ function DashboardVentaComponent({
 
   const ventaMutation = useMutation(
     () => {
+      function buscarPorIdLote(array, idLote) {
+        return array.find((item) => item.lote && item.lote.id_lote === idLote);
+      }
+
+      function calcularCantidad(
+        cantidadPorCaja,
+        cantidadInventario,
+        cantidadVenta
+      ) {
+        let cantidad = 0;
+        if (cantidadPorCaja > cantidadVenta) {
+          cantidad = cantidadInventario === cantidadVenta ? 1 : 0;
+        } else {
+          cantidad = Math.floor(cantidadVenta / cantidadPorCaja);
+        }
+        return cantidad;
+      }
       const payload = {
         ventaData: {
           fecha_venta: getLocalDateTime(),
@@ -115,7 +132,11 @@ function DashboardVentaComponent({
         detalles: productosSeleccionados.map((p) => ({
           id_producto: p.id_producto,
           id_lote: p.id_lote,
-          cantidad: p.cantidad,
+          cantidad: calcularCantidad(
+            buscarPorIdLote(p.inventarios, p.id_lote)?.lote?.cantidadPorCaja,
+            buscarPorIdLote(p.inventarios, p.id_lote)?.subCantidad,
+            p.cantidad_unidad
+          ),
           cantidad_unidad: p.cantidad_unidad,
           descripcion: p.descripcion,
           precio: p.precio,
@@ -124,7 +145,7 @@ function DashboardVentaComponent({
       };
 
       if (movimientoInventario) {
-        return salidaInventarioAddService(payload?.detalles);
+        return salidaInventarioAddService(payload);
       } else {
         return ventaCompletaService(payload);
       }
@@ -133,7 +154,9 @@ function DashboardVentaComponent({
       onSuccess: (response) => {
         setSnackbar({
           open: true,
-          message: "Venta realizada exitosamente!",
+          message: movimientoInventario
+            ? "Movimiento realizado exitosamente!"
+            : "Venta realizada exitosamente!",
           severity: "success",
         });
         refetchProducts();
@@ -143,6 +166,7 @@ function DashboardVentaComponent({
         // handlePrint();
       },
       onError: (error) => {
+        setProductosSeleccionados([]);
         setSnackbar({
           open: true,
           message: `Error al procesar la venta: ${error.message}`,
@@ -450,6 +474,11 @@ function DashboardVentaComponent({
         <Alert
           onClose={() => setSnackbar({ ...snackbar, open: false })}
           severity={snackbar.severity}
+          sx={{
+            fontSize: "1.8rem", // Tamaño del texto del mensaje
+            padding: "16px 24px", // Padding interno del Alert
+            alignItems: "center", // Centrar contenido verticalmente
+          }}
         >
           {snackbar.message}
         </Alert>
