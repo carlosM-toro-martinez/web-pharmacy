@@ -14,11 +14,13 @@ import DrawerComponent from "../../DrawerComponent";
 import ventasService from "../../../async/services/get/ventasService.js";
 import reportVentasService from "../../../async/services/get/reportVentasService.js";
 import TableVentasReport from "./TableVentasReport";
+import VentasResumeTable from "./VentasResumeTable"; // Asegúrate de tenerlo creado
 
 function ReportVentasComponent() {
   const [idInicio, setIdInicio] = useState(null);
   const [idFinal, setIdFinal] = useState(null);
   const [fechasAgrupadas, setFechasAgrupadas] = useState([]);
+  const [modoResumen, setModoResumen] = useState("ventas"); // "ventas" o "productos"
 
   const { data: ventas, isLoading: isLoadingVentas } = useQuery(
     "ventas",
@@ -38,18 +40,10 @@ function ReportVentasComponent() {
     }
   );
 
-  const handleInicioChange = (event) => {
-    setIdInicio(event.target.value);
-  };
-
-  const handleFinalChange = (event) => {
-    setIdFinal(event.target.value);
-  };
-
+  const handleInicioChange = (event) => setIdInicio(event.target.value);
+  const handleFinalChange = (event) => setIdFinal(event.target.value);
   const handleGenerateReport = () => {
-    if (idInicio && idFinal) {
-      fetchReport();
-    }
+    if (idInicio && idFinal) fetchReport();
   };
 
   useEffect(() => {
@@ -67,10 +61,7 @@ function ReportVentasComponent() {
         }
         return acc;
       }, {});
-
-      const fechasTratadas = Object.values(agrupadosPorFecha);
-
-      setFechasAgrupadas(fechasTratadas);
+      setFechasAgrupadas(Object.values(agrupadosPorFecha));
     }
   }, [ventas]);
 
@@ -79,26 +70,28 @@ function ReportVentasComponent() {
       {!isLoadingVentas ? (
         <Box>
           <Typography
-            component={"h2"}
-            style={{
+            component="h2"
+            sx={{
               textAlign: "center",
               fontSize: "2rem",
               fontWeight: "bold",
-              margin: "1rem 0 0 0",
+              mt: 2,
             }}
           >
             Reporte de ventas
           </Typography>
+
           <Box
-            style={{
+            sx={{
               display: "flex",
               justifyContent: "center",
-              gap: "5rem",
+              gap: "2rem",
               alignItems: "center",
-              marginTop: "3rem",
+              mt: 4,
+              flexWrap: "wrap",
             }}
           >
-            <FormControl style={{ width: "15rem" }}>
+            <FormControl sx={{ width: "15rem" }}>
               <InputLabel id="select-inicio-label">Fecha de Inicio</InputLabel>
               <Select
                 label="Fecha de Inicio"
@@ -114,16 +107,7 @@ function ReportVentasComponent() {
               </Select>
             </FormControl>
 
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleGenerateReport}
-              disabled={!idInicio || !idFinal}
-            >
-              Generar Reporte
-            </Button>
-
-            <FormControl style={{ width: "15rem" }}>
+            <FormControl sx={{ width: "15rem" }}>
               <InputLabel id="select-final-label">Fecha Final</InputLabel>
               <Select
                 label="Fecha Final"
@@ -138,20 +122,41 @@ function ReportVentasComponent() {
                 ))}
               </Select>
             </FormControl>
+
+            <FormControl sx={{ width: "15rem" }}>
+              <InputLabel id="modo-resumen-label">Modo Resumen</InputLabel>
+              <Select
+                label="Modo Resumen"
+                labelId="modo-resumen-label"
+                value={modoResumen}
+                onChange={(e) => setModoResumen(e.target.value)}
+              >
+                <MenuItem value="ventas">Ver resumen por Ventas</MenuItem>
+                <MenuItem value="productos">Ver resumen por Producto</MenuItem>
+              </Select>
+            </FormControl>
+
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleGenerateReport}
+              disabled={!idInicio || !idFinal}
+            >
+              Generar Reporte
+            </Button>
           </Box>
 
           {isLoadingReport ? (
-            <Box
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                marginTop: "2rem",
-              }}
-            >
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
               <CircularProgress />
             </Box>
           ) : (
-            reportData && <TableVentasReport reportData={reportData} />
+            reportData &&
+            (modoResumen === "ventas" ? (
+              <TableVentasReport reportData={reportData} />
+            ) : (
+              <VentasResumeTable data={reportData} />
+            ))
           )}
         </Box>
       ) : (

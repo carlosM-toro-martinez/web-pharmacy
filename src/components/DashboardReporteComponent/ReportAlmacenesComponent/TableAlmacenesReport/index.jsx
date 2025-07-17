@@ -13,7 +13,6 @@ import {
   Button,
   Dialog,
   DialogContent,
-  DialogTitle,
 } from "@mui/material";
 import { KeyboardArrowDown, KeyboardArrowUp } from "@mui/icons-material";
 import jsPDF from "jspdf";
@@ -25,11 +24,10 @@ function Row({ row }) {
   const [open, setOpen] = useState(false);
   const classes = useStyles();
 
-  const totalPrecio = row.lotes.reduce(
-    (acc, lote) =>
-      acc + lote.detalleCompra.precio_unitario * lote.detalleCompra.cantidad,
-    0
-  );
+  const totalPrecio = row.lotes.reduce((acc, lote) => {
+    const precio = parseFloat(lote.detalleCompra.precio_unitario) || 0;
+    return acc + precio * lote.detalleCompra.cantidad;
+  }, 0);
 
   return (
     <>
@@ -43,74 +41,55 @@ function Row({ row }) {
             {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
           </IconButton>
         </TableCell>
-        <TableCell>{row.numero_lote}</TableCell>
-        <TableCell>
-          {row.lotes.reduce((acc, lote) => acc + lote.cantidad, 0)}
+        <TableCell style={{ fontWeight: "bold" }}>{row.nombre}</TableCell>
+        <TableCell>{row.lotes.length}</TableCell>
+        <TableCell style={{ fontWeight: "bold" }}>
+          {totalPrecio.toFixed(2)}
         </TableCell>
-        <TableCell>
-          {new Date(row.lotes[0].fecha_ingreso).toLocaleDateString()}
-        </TableCell>
-        <TableCell>
-          {row.lotes[0].detalleCompra.proveedor.nombre.toUpperCase()}
-        </TableCell>
-        <TableCell style={{ fontWeight: "bold" }}>{totalPrecio}</TableCell>
       </TableRow>
-      <TableRow>
-        <TableCell
-          colSpan={6}
-          className={classes.collapseCell}
-          style={{ paddingBottom: 0, paddingTop: 0 }}
-        >
-          <Collapse in={open} timeout="auto" unmountOnExit>
-            <Box margin={1}>
-              <h4>Detalles del Lote</h4>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell style={{ color: "#000", fontWeight: "bold" }}>
-                      Producto
+      <TableCell colSpan={6}>
+        <Collapse in={open} timeout="auto">
+          <Box>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Producto</TableCell>
+                  <TableCell>Nº Lote</TableCell>
+                  <TableCell>Fecha Ingreso</TableCell>
+                  <TableCell>Fecha Caducidad</TableCell>
+                  <TableCell>Cantidad</TableCell>
+                  <TableCell>SubCantidad</TableCell>
+                  <TableCell>Cantidad por Caja</TableCell>
+                  <TableCell>Precio</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {row.lotes.map((lote) => (
+                  <TableRow key={lote.id_lote}>
+                    <TableCell>{lote.detalleCompra.producto.nombre}</TableCell>
+                    <TableCell>{lote.numero_lote}</TableCell>
+                    <TableCell>
+                      {new Date(lote.fecha_ingreso).toLocaleDateString()}
                     </TableCell>
-                    <TableCell style={{ color: "#000", fontWeight: "bold" }}>
-                      Fecha Caducidad
+                    <TableCell>
+                      {new Date(lote.fecha_caducidad).toLocaleDateString()}
                     </TableCell>
-                    <TableCell style={{ color: "#000", fontWeight: "bold" }}>
-                      Cantidad
-                    </TableCell>
-                    <TableCell style={{ color: "#000", fontWeight: "bold" }}>
-                      Sub Cantidad
-                    </TableCell>
-                    <TableCell style={{ color: "#000", fontWeight: "bold" }}>
-                      Cantidad por Caja
-                    </TableCell>
-                    <TableCell style={{ color: "#000", fontWeight: "bold" }}>
-                      Precio
+                    <TableCell>{lote.cantidad}</TableCell>
+                    <TableCell>{lote.subCantidad}</TableCell>
+                    <TableCell>{lote.cantidadPorCaja || "N/A"}</TableCell>
+                    <TableCell>
+                      {(
+                        (parseFloat(lote.detalleCompra.precio_unitario) || 0) *
+                        lote.detalleCompra.cantidad
+                      ).toFixed(2)}
                     </TableCell>
                   </TableRow>
-                </TableHead>
-                <TableBody>
-                  {row.lotes.map((lote) => (
-                    <TableRow key={lote.id_lote}>
-                      <TableCell style={{ textTransform: "capitalize" }}>
-                        {lote.detalleCompra.producto.nombre}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(lote.fecha_caducidad).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>{lote.cantidad}</TableCell>
-                      <TableCell>{lote.subCantidad}</TableCell>
-                      <TableCell>{lote.cantidadPorCaja || "N/A"}</TableCell>
-                      <TableCell style={{ fontWeight: "bold" }}>
-                        {lote.detalleCompra.precio_unitario *
-                          lote.detalleCompra.cantidad}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Box>
-          </Collapse>
-        </TableCell>
-      </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Box>
+        </Collapse>
+      </TableCell>
     </>
   );
 }
@@ -122,72 +101,63 @@ export default function TableAlmacenesReport({ reportData }) {
 
   const generatePDF = () => {
     const doc = new jsPDF();
-    doc.text("Reporte de Almacenes", 80, 10);
+    doc.text("Reporte por Proveedor", 80, 10);
 
-    const tableData = reportData.map((row) => [
-      row.numero_lote,
-      row.lotes.reduce((acc, lote) => acc + lote.cantidad, 0),
-      new Date(row.lotes[0].fecha_ingreso).toLocaleDateString(),
-      row.lotes[0].detalleCompra.proveedor.nombre.toUpperCase(),
-      row.lotes.reduce(
-        (acc, lote) =>
-          acc +
-          lote.detalleCompra.precio_unitario * lote.detalleCompra.cantidad,
-        0
-      ),
-    ]);
-
-    doc.autoTable({
-      head: [
-        [
-          "Número de Lote",
-          "Cantidad Total",
-          "Fecha Ingreso",
-          "Proveedor",
-          "Precio Total",
+    reportData.forEach((prov) => {
+      doc.autoTable({
+        head: [["Proveedor", "Total Lotes", "Total Precio"]],
+        body: [
+          [
+            prov.nombre,
+            prov.lotes.length,
+            prov.lotes
+              .reduce(
+                (acc, lote) =>
+                  acc +
+                  (parseFloat(lote.detalleCompra.precio_unitario) || 0) *
+                    lote.detalleCompra.cantidad,
+                0
+              )
+              .toFixed(2),
+          ],
         ],
-      ],
-      body: tableData,
-      startY: 20,
-      theme: "grid",
-    });
+        startY: doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 20,
+      });
 
-    reportData.forEach((row) => {
       doc.autoTable({
         head: [
           [
             "Producto",
-            "Fecha Caducidad",
+            "Nº Lote",
+            "F. Ingreso",
+            "F. Caducidad",
             "Cantidad",
-            "Sub Cantidad",
-            "Cantidad por Caja",
+            "SubCantidad",
+            "Caja",
             "Precio",
           ],
         ],
-        body: row.lotes.map((lote) => [
+        body: prov.lotes.map((lote) => [
           lote.detalleCompra.producto.nombre,
+          lote.numero_lote,
+          new Date(lote.fecha_ingreso).toLocaleDateString(),
           new Date(lote.fecha_caducidad).toLocaleDateString(),
           lote.cantidad,
           lote.subCantidad,
           lote.cantidadPorCaja || "N/A",
-          lote.detalleCompra.precio_unitario * lote.detalleCompra.cantidad,
+          (
+            (parseFloat(lote.detalleCompra.precio_unitario) || 0) *
+            lote.detalleCompra.cantidad
+          ).toFixed(2),
         ]),
-        startY: doc.previousAutoTable.finalY + 20,
-        theme: "striped",
-        didDrawPage: (data) => {
-          doc.text(
-            `Detalles del Lote ${row.numero_lote}`,
-            15,
-            data.settings.startY - 5
-          );
-        },
+        startY: doc.lastAutoTable.finalY + 5,
       });
     });
 
     const img = new Image();
     img.src = background;
     img.onload = () => {
-      doc.addImage(img, "PNG", 80, doc.previousAutoTable.finalY + 80, 40, 40);
+      doc.addImage(img, "PNG", 80, doc.previousAutoTable.finalY + 10, 40, 40);
       const pdfOutput = doc.output("blob");
       setPdfBlob(pdfOutput);
       setOpenDialog(true);
@@ -213,43 +183,35 @@ export default function TableAlmacenesReport({ reportData }) {
           )}
         </DialogContent>
       </Dialog>
+
       <TableContainer component={Paper} className={classes.tableContainer}>
         <Table>
-          <TableHead
-            className={classes.tableHeader}
-            style={{ backgroundColor: "#f5f5f5" }}
-          >
+          <TableHead style={{ backgroundColor: "#1976d2" }}>
             <TableRow>
-              <TableCell style={{ color: "#fff", fontWeight: "bold" }} />
-              <TableCell style={{ fontWeight: "bold" }}>
-                Número de Lote
+              <TableCell />
+              <TableCell style={{ color: "white", fontWeight: "bold" }}>
+                Proveedor
               </TableCell>
-              <TableCell style={{ fontWeight: "bold" }}>
-                Cantidad Total
+              <TableCell style={{ color: "white", fontWeight: "bold" }}>
+                Total Lotes
               </TableCell>
-              <TableCell style={{ fontWeight: "bold" }}>
-                Fecha Ingreso
+              <TableCell style={{ color: "white", fontWeight: "bold" }}>
+                Total Precio
               </TableCell>
-              <TableCell style={{ fontWeight: "bold" }}>Proveedor</TableCell>
-              <TableCell style={{ fontWeight: "bold" }}>Precio Total</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {reportData.map((row) => (
-              <Row key={row.numero_lote} row={row} />
+              <Row key={row.id_proveedor} row={row} />
             ))}
           </TableBody>
         </Table>
       </TableContainer>
+
       <Box
         sx={{ display: "flex", justifyContent: "center", marginTop: "2rem" }}
       >
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={generatePDF}
-          style={{ marginBottom: "10px" }}
-        >
+        <Button variant="contained" color="primary" onClick={generatePDF}>
           Guardar Reporte
         </Button>
       </Box>

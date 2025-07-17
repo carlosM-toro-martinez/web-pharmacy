@@ -31,6 +31,7 @@ import { MainContext } from "../../../../context/MainContext";
 function TableVentasReport({ reportData, ventaToday, refetchVentas, caja }) {
   const [utilidades, setUtilidades] = useState([]);
   const [utilidadGlobal, setUtilidadGlobal] = useState(0);
+  console.log(reportData);
 
   useEffect(() => {
     if (reportData && !ventaToday) {
