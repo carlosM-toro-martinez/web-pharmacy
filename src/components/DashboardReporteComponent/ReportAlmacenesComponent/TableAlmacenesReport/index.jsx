@@ -47,49 +47,54 @@ function Row({ row }) {
           {totalPrecio.toFixed(2)}
         </TableCell>
       </TableRow>
-      <TableCell colSpan={6}>
-        <Collapse in={open} timeout="auto">
-          <Box>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Producto</TableCell>
-                  <TableCell>Nº Lote</TableCell>
-                  <TableCell>Fecha Ingreso</TableCell>
-                  <TableCell>Fecha Caducidad</TableCell>
-                  <TableCell>Cantidad</TableCell>
-                  <TableCell>SubCantidad</TableCell>
-                  <TableCell>Cantidad por Caja</TableCell>
-                  <TableCell>Precio</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {row.lotes.map((lote) => (
-                  <TableRow key={lote.id_lote}>
-                    <TableCell>{lote.detalleCompra.producto.nombre}</TableCell>
-                    <TableCell>{lote.numero_lote}</TableCell>
-                    <TableCell>
-                      {new Date(lote.fecha_ingreso).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(lote.fecha_caducidad).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>{lote.cantidad}</TableCell>
-                    <TableCell>{lote.subCantidad}</TableCell>
-                    <TableCell>{lote.cantidadPorCaja || "N/A"}</TableCell>
-                    <TableCell>
-                      {(
-                        (parseFloat(lote.detalleCompra.precio_unitario) || 0) *
-                        lote.detalleCompra.cantidad
-                      ).toFixed(2)}
-                    </TableCell>
+
+      <TableRow>
+        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={8}>
+          <Collapse in={open} timeout="auto" unmountOnExit>
+            <Box margin={1}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Producto</TableCell>
+                    <TableCell>Nº Lote</TableCell>
+                    <TableCell>Fecha Ingreso</TableCell>
+                    <TableCell>Fecha Caducidad</TableCell>
+                    <TableCell>Cantidad</TableCell>
+                    <TableCell>SubCantidad</TableCell>
+                    <TableCell>Cantidad por Caja</TableCell>
+                    <TableCell>Precio</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Box>
-        </Collapse>
-      </TableCell>
+                </TableHead>
+                <TableBody>
+                  {row.lotes.map((lote) => (
+                    <TableRow key={lote.id_lote}>
+                      <TableCell>
+                        {lote.detalleCompra.producto.nombre}
+                      </TableCell>
+                      <TableCell>{lote.numero_lote}</TableCell>
+                      <TableCell>
+                        {new Date(lote.fecha_ingreso).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(lote.fecha_caducidad).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>{lote.cantidad}</TableCell>
+                      <TableCell>{lote.subCantidad}</TableCell>
+                      <TableCell>{lote.cantidadPorCaja || "N/A"}</TableCell>
+                      <TableCell>
+                        {(
+                          (parseFloat(lote.detalleCompra.precio_unitario) ||
+                            0) * lote.detalleCompra.cantidad
+                        ).toFixed(2)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Box>
+          </Collapse>
+        </TableCell>
+      </TableRow>
     </>
   );
 }
@@ -193,7 +198,7 @@ export default function TableAlmacenesReport({ reportData }) {
                 Proveedor
               </TableCell>
               <TableCell style={{ color: "white", fontWeight: "bold" }}>
-                Total Lotes
+                Total Productos
               </TableCell>
               <TableCell style={{ color: "white", fontWeight: "bold" }}>
                 Total Precio

@@ -387,14 +387,15 @@ function VentaRow({ venta, ventaToday, refetchVentas, caja, utilidades }) {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {venta.detallesVenta.map((detalle, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{detalle?.producto?.nombre}</TableCell>
-                      {/* <TableCell>{detalle.cantidad}</TableCell> */}
-                      <TableCell>{detalle.subCantidad}</TableCell>
-                      <TableCell>{detalle.precio_unitario}</TableCell>
-                    </TableRow>
-                  ))}
+                  {venta.detallesVenta
+                    .filter((detalle) => detalle.subCantidad > 0)
+                    .map((detalle, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{detalle?.producto?.nombre}</TableCell>
+                        <TableCell>{detalle.subCantidad}</TableCell>
+                        <TableCell>{detalle.precio_unitario}</TableCell>
+                      </TableRow>
+                    ))}
                 </TableBody>
               </Table>
             </Box>
