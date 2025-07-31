@@ -69,6 +69,7 @@ function ReportAlmacenesComponent() {
       }, {});
 
       const fechasTratadas = Object.values(agrupadosPorFecha);
+      fechasTratadas.sort((a, b) => b.primerosId - a.primerosId);
 
       setFechasAgrupadas(fechasTratadas);
     }

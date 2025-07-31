@@ -26,6 +26,7 @@ import Theme from "./theme/Theme";
 import ReportProveedoresComponent from "./components/DashboardReporteComponent/ReportProveedoresComponent";
 import ReportProductosComponent from "./components/DashboardReporteComponent/ReportProductosComponent";
 import EditProductProviders from "./pages/Almacenes/EditProductProviders";
+import ReportWorkersComponent from "./components/DashboardReporteComponent/ReportWorkersComponent";
 
 function App() {
   const queryClient = new QueryClient();
@@ -55,6 +56,10 @@ function App() {
                   <Route
                     path="producto"
                     element={<ReportProductosComponent />}
+                  />
+                  <Route
+                    path="trabajadores"
+                    element={<ReportWorkersComponent />}
                   />
                 </Route>
               </Route>

@@ -64,58 +64,6 @@ const RegisterBuyComponent = ({
     setSnackbar({ ...snackbar, open: false });
   };
 
-  // const detalleCompraMutation = useMutation(detalleCompraAddServices, {
-  //   onSuccess: (response) => {
-  //     setDetalleCompraId(response.id_detalle);
-  //     const newLote = {
-  //       id_producto: producto,
-  //       numero_lote: lote,
-  //       fecha_ingreso: getLocalDateTime(),
-  //       fecha_caducidad: fechaCaducidad,
-  //       cantidad: cantidad ? cantidad : 0,
-  //       precio_unitario: precio,
-  //       peso: peso ? peso : 0,
-  //       subCantidad: subCantidad ? subCantidad * cantidad : cantidad * 1,
-  //       cantidadPorCaja: subCantidad > 0 ? subCantidad : 1,
-  //       id_detalle_compra: response.id_detalle,
-  //     };
-  //     loteMutation.mutate(newLote);
-  //   },
-  //   onError: (error) => {
-  //     setSnackbar({
-  //       open: true,
-  //       message: `Error al guardar el detalle de compra: ${error.message}`,
-  //       severity: "error",
-  //     });
-  //   },
-  // });
-
-  // const loteMutation = useMutation(loteAddServices, {
-  //   onSuccess: () => {
-  //     setSnackbar({
-  //       open: true,
-  //       message: "Lote creado exitosamente!",
-  //       severity: "success",
-  //     });
-  //     setLoteNumber(lote);
-  //     setIsLoteProveedorLocked(true);
-  //     setFechaIngreso("");
-  //     setFechaCaducidad("");
-  //     setCantidad("");
-  //     setPrecio("");
-  //     setSubCantidad(null);
-  //     setPeso("");
-  //     setDetalleCompraId(null);
-  //   },
-  //   onError: (error) => {
-  //     setSnackbar({
-  //       open: true,
-  //       message: `Error al crear el lote: ${error.message}`,
-  //       severity: "error",
-  //     });
-  //   },
-  // });
-
   const handleSave = () => {
     setLoteNumber(lote);
     const newBuy = {
@@ -173,7 +121,16 @@ const RegisterBuyComponent = ({
   });
 
   const handleFinalize = () => {
-    const transformedArray = registroCombinado.map((item, index) => ({
+    const seen = new Set();
+    const filteredRegistro = registroCombinado.filter((item) => {
+      if (seen.has(item.id_producto)) {
+        return false;
+      }
+      seen.add(item.id_producto);
+      return true;
+    });
+
+    const transformedArray = filteredRegistro.map((item) => ({
       detalleCompraData: {
         id_proveedor: item.id_proveedor,
         id_producto: item.id_producto,
@@ -215,6 +172,7 @@ const RegisterBuyComponent = ({
         id_trabajador: item.id_trabajador,
       },
     }));
+
     buyMutation.mutate(transformedArray);
   };
 
