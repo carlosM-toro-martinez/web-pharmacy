@@ -25,6 +25,8 @@ import detalleCompraUpdateServices from "../../async/services/put/detalleCompraU
 import detalleCompraDeleteServices from "../../async/services/delete/detalleCompraDeleteServices";
 import { Button } from "@mui/material";
 import ProductoModalComponent from "../RegisterBuyComponent/ProductoModalComponent";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 const ITEM_HEIGHT = 48;
 
@@ -160,6 +162,27 @@ export default function TableProductsComponent({
       },
     }
   );
+
+  const handleExportToExcel = () => {
+    const dataToExport = filteredProducts.map((row) => ({
+      Nombre: row.nombre || "N/A",
+      Stock: row.subCantidad ?? "",
+      "Forma Farmacéutica": row.forma_farmaceutica || "",
+      Concentración: row.concentracion || "",
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Productos");
+
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
+
+    const data = new Blob([excelBuffer], { type: "application/octet-stream" });
+    saveAs(data, "productos.xlsx");
+  };
 
   return (
     <Box className={classes.root}>
@@ -314,6 +337,9 @@ export default function TableProductsComponent({
           labelRowsPerPage="Filas por página"
         />
       </Paper>
+      <Button variant="outlined" color="success" onClick={handleExportToExcel}>
+        Descargar Excel
+      </Button>
 
       {openUpdateModal && (
         <ModalUpdateProduct

@@ -9,10 +9,23 @@ import { MainContext } from "../../../context/MainContext.js";
 import productosLotesService from "../../../async/services/get/productosLotesService.js";
 import inventarioService from "../../../async/services/get/inventarioService.js";
 import { Navigate, Outlet, useNavigate } from "react-router-dom";
+import SalesToday from "../SalesToday";
+import ventasTodayService from "../../../async/services/get/ventasTodayService.js";
 
 function CreateVenta({ movimientoInventario }) {
   const { data, isLoading, error, refetch, openCaja, user } =
     useContext(MainContext);
+
+  const {
+    data: reportVentas,
+    isLoading: isLoadingVentas,
+    isError: isErrorVentas,
+    refetch: refetchVentas,
+  } = useQuery("ventasToday", ventasTodayService);
+  const { data: productos, isLoading: isLoadingProductos } = useQuery(
+    "products",
+    productosService
+  );
   const navigate = useNavigate();
   useEffect(() => {
     if (!user) {
@@ -95,7 +108,14 @@ function CreateVenta({ movimientoInventario }) {
             caja={data}
             refetchCaja={refetch}
             movimientoInventario={movimientoInventario}
+            refetchVentas={refetchVentas}
           />
+          {/* <SalesToday
+            reportVentas={reportVentas}
+            isLoadingVentas={isLoadingVentas}
+            isErrorVentas={isErrorVentas}
+            refetchVentas={refetchVentas}
+          /> */}
         </Paper>
       </DrawerComponent>
     );

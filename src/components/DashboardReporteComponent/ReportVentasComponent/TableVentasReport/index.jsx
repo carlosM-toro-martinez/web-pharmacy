@@ -31,7 +31,6 @@ import { MainContext } from "../../../../context/MainContext";
 function TableVentasReport({ reportData, ventaToday, refetchVentas, caja }) {
   const [utilidades, setUtilidades] = useState([]);
   const [utilidadGlobal, setUtilidadGlobal] = useState(0);
-  console.log(reportData);
 
   useEffect(() => {
     if (reportData && !ventaToday) {
@@ -198,6 +197,8 @@ function TableVentasReport({ reportData, ventaToday, refetchVentas, caja }) {
           <TableHead style={{ backgroundColor: "#f5f5f5" }}>
             <TableRow>
               <TableCell style={{ color: "#fff", fontWeight: "bold" }} />
+
+              <TableCell style={{ fontWeight: "bold" }}>N°</TableCell>
               <TableCell style={{ fontWeight: "bold" }}>Fecha Venta</TableCell>
               <TableCell style={{ fontWeight: "bold" }}>Cliente</TableCell>
               <TableCell style={{ fontWeight: "bold" }}>Trabajador</TableCell>
@@ -222,6 +223,7 @@ function TableVentasReport({ reportData, ventaToday, refetchVentas, caja }) {
                 refetchVentas={refetchVentas}
                 caja={caja}
                 utilidades={utilidades[index]}
+                index={index}
               />
             ))}
           </TableBody>
@@ -257,8 +259,15 @@ function TableVentasReport({ reportData, ventaToday, refetchVentas, caja }) {
   );
 }
 
-function VentaRow({ venta, ventaToday, refetchVentas, caja, utilidades }) {
-  const { user } = useContext(MainContext);
+function VentaRow({
+  venta,
+  ventaToday,
+  refetchVentas,
+  caja,
+  utilidades,
+  index,
+}) {
+  const { user, refetch } = useContext(MainContext);
 
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -279,6 +288,7 @@ function VentaRow({ venta, ventaToday, refetchVentas, caja, utilidades }) {
           severity: "success",
         });
         refetchVentas();
+        refetch();
       },
       onError: (error) => {
         setSnackbar({
@@ -335,6 +345,7 @@ function VentaRow({ venta, ventaToday, refetchVentas, caja, utilidades }) {
             {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
           </IconButton>
         </TableCell>
+        <TableCell>{index + 1}</TableCell>
         <TableCell>
           {new Date(venta?.fecha_venta).toLocaleDateString()} {soloHora}
         </TableCell>

@@ -21,6 +21,7 @@ function DashboardVentaComponent({
   caja,
   refetchCaja,
   movimientoInventario,
+  refetchVentas,
 }) {
   const ventaFormRef = useRef(null);
   const denominacionFormRef = useRef(null);
@@ -161,6 +162,7 @@ function DashboardVentaComponent({
         });
         refetchProducts();
         refetchCaja();
+        refetchVentas();
         if (cancelForm) cancelForm();
         if (setRestoreDenom) setRestoreDenom();
         // handlePrint();

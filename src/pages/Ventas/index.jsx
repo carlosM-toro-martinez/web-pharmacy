@@ -37,7 +37,14 @@ function Ventas() {
     "products",
     productosService
   );
+
+  function ordenarPorIdVenta(arr) {
+    return [...arr].sort((a, b) => a.id_venta - b.id_venta);
+  }
+
   const [selectedProductId, setSelectedProductId] = useState(null);
+  const [ventasOrdenadas, setVentasOrdenadas] = useState([]);
+
   const { data: metodoVentasData, refetch } = useQuery(
     ["metodoVentas", selectedProductId],
     () => metodoVentasService(selectedProductId),
@@ -82,6 +89,13 @@ function Ventas() {
       navigate("/login", { replace: true });
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    if (reportVentas && Array.isArray(reportVentas)) {
+      const ordenadas = ordenarPorIdVenta(reportVentas);
+      setVentasOrdenadas(ordenadas);
+    }
+  }, [reportVentas]);
 
   return (
     <>
@@ -151,7 +165,7 @@ function Ventas() {
                 Array.isArray(reportVentas) &&
                 reportVentas.length > 0 ? (
                   <TableVentasReport
-                    reportData={reportVentas}
+                    reportData={ventasOrdenadas}
                     ventaToday={true}
                     refetchVentas={refetchVentas}
                     caja={data}
