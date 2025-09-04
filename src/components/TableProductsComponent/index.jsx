@@ -164,7 +164,13 @@ export default function TableProductsComponent({
   );
 
   const handleExportToExcel = () => {
-    const dataToExport = filteredProducts.map((row) => ({
+    const sortedProducts = [...filteredProducts].sort((a, b) =>
+      (a.nombre || "").localeCompare(b.nombre || "", "es", {
+        sensitivity: "base",
+      })
+    );
+
+    const dataToExport = sortedProducts.map((row) => ({
       Nombre: row.nombre || "N/A",
       Stock: row.subCantidad ?? "",
       "Forma Farmacéutica": row.forma_farmaceutica || "",
