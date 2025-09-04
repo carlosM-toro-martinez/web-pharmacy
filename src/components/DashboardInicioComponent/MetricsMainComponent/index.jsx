@@ -71,7 +71,6 @@ function MetricsMainComponent() {
 
   if (isLoading) return <Typography>Cargando datos...</Typography>;
   if (!data) return <Typography>No hay datos disponibles.</Typography>;
-  console.log(expiringCount);
 
   return (
     <Box sx={{ p: 3 }}>

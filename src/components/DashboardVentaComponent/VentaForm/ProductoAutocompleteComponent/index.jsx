@@ -15,6 +15,7 @@ const ProductoAutocompleteComponent = ({
   productosConTotales,
 }) => {
   const [inputValue, setInputValue] = useState("");
+  const [search, setSearch] = useState("");
   const [selectedValue, setSelectedValue] = useState(null);
 
   const handleInputChange = (event, newInputValue) => {
@@ -38,6 +39,8 @@ const ProductoAutocompleteComponent = ({
       }
     }
   };
+
+  const [open, setOpen] = useState(false);
 
   return (
     <FormControl fullWidth>
@@ -67,12 +70,20 @@ const ProductoAutocompleteComponent = ({
             return `${nombre} ${forma} ${conc} - “${prov}” [${cod}] Stock: ${stock}u.`;
           }}
           value={selectedValue}
+          open={open}
+          onOpen={() => setOpen(true)}
+          onClose={(event, reason) => {
+            if (reason === "blur") {
+              setOpen(false);
+            }
+          }}
           onChange={(event, newValue) => {
             if (newValue) {
               handleProductoChange(newValue.id_producto, newValue);
             }
-            setInputValue("");
+            setInputValue(search);
             setSelectedValue(null);
+            setTimeout(() => setOpen(true), 0);
           }}
           inputValue={inputValue}
           onInputChange={handleInputChange}
@@ -80,6 +91,8 @@ const ProductoAutocompleteComponent = ({
             option?.id_producto === value?.id_producto
           }
           filterOptions={(options, { inputValue }) => {
+            setSearch(inputValue);
+
             const searchWords = inputValue.toLowerCase().trim().split(/\s+/);
 
             return options.filter((option) => {
