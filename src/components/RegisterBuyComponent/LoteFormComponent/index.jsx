@@ -117,7 +117,7 @@ const LoteFormComponent = ({
         <TextField
           variant="outlined"
           size="small"
-          label="Paquetes o cajas"
+          label="Cantidad por unidad"
           type="number"
           value={cantidad || ""}
           onChange={(e) => setCantidad(e.target.value)}
@@ -127,7 +127,7 @@ const LoteFormComponent = ({
         />
       </Box>
 
-      <Box
+      {/* <Box
         sx={{
           flexBasis: { xs: "100%", sm: "50%", md: "33.33%", lg: "15%" },
           minWidth: 250,
@@ -144,7 +144,7 @@ const LoteFormComponent = ({
           //required
           fullWidth
         />
-      </Box>
+      </Box> */}
 
       <Box
         sx={{
@@ -155,7 +155,7 @@ const LoteFormComponent = ({
         <TextField
           variant="outlined"
           size="small"
-          label="Precio por caja"
+          label="Precio de compra"
           type="number"
           value={precio || ""}
           onChange={(e) => setPrecio(e.target.value)}

@@ -60,8 +60,8 @@ function Row({ row }) {
                     <TableCell>Fecha Ingreso</TableCell>
                     <TableCell>Fecha Caducidad</TableCell>
                     <TableCell>Cantidad</TableCell>
-                    <TableCell>SubCantidad</TableCell>
-                    <TableCell>Cantidad por Caja</TableCell>
+                    {/* <TableCell>SubCantidad</TableCell>
+                    <TableCell>Cantidad por Caja</TableCell> */}
                     <TableCell>Precio</TableCell>
                   </TableRow>
                 </TableHead>
@@ -79,8 +79,8 @@ function Row({ row }) {
                         {new Date(lote.fecha_caducidad).toLocaleDateString()}
                       </TableCell>
                       <TableCell>{lote.cantidad}</TableCell>
-                      <TableCell>{lote.subCantidad}</TableCell>
-                      <TableCell>{lote.cantidadPorCaja || "N/A"}</TableCell>
+                      {/* <TableCell>{lote.subCantidad}</TableCell>
+                      <TableCell>{lote.cantidadPorCaja || "N/A"}</TableCell> */}
                       <TableCell>
                         {(
                           (parseFloat(lote.detalleCompra.precio_unitario) ||

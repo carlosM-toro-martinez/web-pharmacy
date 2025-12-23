@@ -134,7 +134,7 @@ const RegistroTableComponent = ({
                   {new Date(registro?.fecha_caducidad).toLocaleDateString()}
                 </TableCell>
                 <TableCell>
-                  {`${registro?.cantidad} - ${registro?.subCantidad}`}
+                  {`${registro?.cantidad}`}
                   {"u"}
                 </TableCell>
                 <TableCell>{registro?.precio_unitario} Bs</TableCell>

@@ -16,8 +16,7 @@ import reportAlmacenesService from "../../../async/services/get/reportAlmacenesS
 import TableAlmacenesReport from "./TableAlmacenesReport";
 
 function ReportAlmacenesComponent() {
-  const [idInicio, setIdInicio] = useState(null);
-  const [idFinal, setIdFinal] = useState(null);
+  const [selectedDateRange, setSelectedDateRange] = useState(null);
   const [fechasAgrupadas, setFechasAgrupadas] = useState([]);
 
   const { data: lotes, isLoading: isLoadingLotes } = useQuery(
@@ -31,23 +30,27 @@ function ReportAlmacenesComponent() {
     isLoading: isLoadingReport,
     error: reportError,
   } = useQuery(
-    ["reporteAlmacenes", idInicio, idFinal],
-    () => reportAlmacenesService(idInicio, idFinal),
+    ["reporteAlmacenes", selectedDateRange],
+    () => {
+      if (selectedDateRange) {
+        return reportAlmacenesService(
+          selectedDateRange.primerosId,
+          selectedDateRange.ultimosId
+        );
+      }
+    },
     {
       enabled: false,
     }
   );
 
-  const handleInicioChange = (event) => {
-    setIdInicio(event.target.value);
-  };
-
-  const handleFinalChange = (event) => {
-    setIdFinal(event.target.value);
+  const handleDateRangeChange = (event) => {
+    setSelectedDateRange(event.target.value);
   };
 
   const handleGenerateReport = () => {
-    if (idInicio && idFinal) {
+    if (selectedDateRange) {
+      console.log("Generating report for:", selectedDateRange);
       fetchReport();
     }
   };
@@ -94,21 +97,23 @@ function ReportAlmacenesComponent() {
             style={{
               display: "flex",
               justifyContent: "center",
-              gap: "5rem",
+              gap: "2rem",
               alignItems: "center",
               marginTop: "3rem",
+              flexWrap: "wrap",
             }}
           >
-            <FormControl style={{ width: "15rem" }}>
-              <InputLabel id="select-inicio-label">Fecha de Inicio</InputLabel>
+            <FormControl style={{ width: "20rem" }}>
+              <InputLabel id="select-fecha-label">Rango de Fechas</InputLabel>
               <Select
-                label="Fecha de Inicio"
-                labelId="select-inicio-label"
-                value={idInicio}
-                onChange={handleInicioChange}
+                label="Rango de Fechas"
+                labelId="select-fecha-label"
+                value={selectedDateRange}
+                onChange={handleDateRangeChange}
+                renderValue={(selected) => selected?.fecha || ""}
               >
                 {fechasAgrupadas?.map((fecha) => (
-                  <MenuItem key={fecha.fecha} value={fecha.primerosId}>
+                  <MenuItem key={fecha.fecha} value={fecha}>
                     {fecha.fecha}
                   </MenuItem>
                 ))}
@@ -119,27 +124,25 @@ function ReportAlmacenesComponent() {
               variant="contained"
               color="primary"
               onClick={handleGenerateReport}
-              disabled={!idInicio || !idFinal}
+              disabled={!selectedDateRange}
+              style={{ height: "56px" }}
             >
               Generar Reporte
             </Button>
-
-            <FormControl style={{ width: "15rem" }}>
-              <InputLabel id="select-final-label">Fecha Final</InputLabel>
-              <Select
-                label="Fecha Final"
-                labelId="select-final-label"
-                value={idFinal}
-                onChange={handleFinalChange}
-              >
-                {fechasAgrupadas?.map((fecha) => (
-                  <MenuItem key={fecha.fecha} value={fecha.ultimosId}>
-                    {fecha.fecha}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
           </Box>
+
+          {/* {selectedDateRange && (
+            <Typography
+              style={{
+                textAlign: "center",
+                marginTop: "1rem",
+                color: "textSecondary",
+              }}
+            >
+              IDs capturados: Inicio = {selectedDateRange.primerosId}, Fin ={" "}
+              {selectedDateRange.ultimosId}
+            </Typography>
+          )} */}
 
           {isLoadingReport ? (
             <Box
