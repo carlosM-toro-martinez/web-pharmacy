@@ -23,6 +23,8 @@ const RegistroTableComponent = ({
   setRegistroCombinado,
   handleFinalize,
   numeroLote,
+  loadingBuy,
+  setLoadingBuy
 }) => {
   const { user } = useContext(MainContext);
 
@@ -175,6 +177,7 @@ const RegistroTableComponent = ({
             marginTop: "20px",
             backgroundColor: registroCombinado.length > 0 ? "green" : "red",
           }}
+          disabled={loadingBuy}
         >
           {registroCombinado.length > 0 ? "Finalizar" : "Cancelar"}
         </Button>

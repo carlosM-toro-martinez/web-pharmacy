@@ -16,6 +16,7 @@ import {
   DialogContent,
   Snackbar,
   Alert,
+  CircularProgress,
 } from "@mui/material";
 import { KeyboardArrowDown, KeyboardArrowUp } from "@mui/icons-material";
 import jsPDF from "jspdf";
@@ -278,9 +279,18 @@ function VentaRow({
   });
   const classes = useStyles();
 
+  const [anulandoId, setAnulandoId] = useState(null);
+
   const ventaMutation = useMutation(
     (payload) => anularVentaAddService(payload),
     {
+      onMutate: (variables) => {
+        // Extraer id_venta del primer elemento del payload
+        const ventaId = variables[0]?.id_venta;
+        if (ventaId) {
+          setAnulandoId(ventaId);
+        }
+      },
       onSuccess: () => {
         setSnackbar({
           open: true,
@@ -297,10 +307,19 @@ function VentaRow({
           severity: "error",
         });
       },
+      onSettled: () => {
+        // Restablecer el estado cuando la mutación termina (éxito o error)
+        setAnulandoId(null);
+      },
     }
   );
 
   const handleAnularVenta = (ventaAAnular) => {
+    // Verificar si ya se está anulando esta venta
+    if (anulandoId === ventaAAnular.id_venta) {
+      return;
+    }
+
     let transformVenta = ventaAAnular.detallesVenta.map((detalle) => ({
       id_producto: detalle.id_producto,
       nombre: detalle.producto.nombre,
@@ -318,6 +337,7 @@ function VentaRow({
       fecha_venta: getLocalDateTime(),
       total: ventaAAnular?.total,
     }));
+    
     if (transformVenta?.length === 0) {
       transformVenta = [
         {
@@ -361,11 +381,12 @@ function VentaRow({
             <TableCell>
               <Button
                 variant="contained"
-                color="primary"
+                color="error"
                 onClick={() => handleAnularVenta(venta)}
-                sx={{ backgroundColor: "red", fontWeight: "bold" }}
+                disabled={ventaMutation.isLoading || anulandoId === venta.id_venta}
+                startIcon={ventaMutation.isLoading && anulandoId === venta.id_venta ? <CircularProgress size={20} /> : null}
               >
-                ANULAR VENTA
+                {ventaMutation.isLoading && anulandoId === venta.id_venta ? 'Anulando...' : 'Anular Venta'}
               </Button>
             </TableCell>
           ) : (

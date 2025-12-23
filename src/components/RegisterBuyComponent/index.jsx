@@ -44,7 +44,8 @@ const RegisterBuyComponent = ({
   const [error, setError] = useState();
   const [isLoteProveedorLocked, setIsLoteProveedorLocked] = useState(false);
   const [precioVenta, setPrecioVenta] = useState(null);
-
+  const [loadingBuy, setLoadingBuy] = useState(false);
+  
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -108,8 +109,11 @@ const RegisterBuyComponent = ({
       setProveedor("");
       setLote("");
       setRegistroCombinado([]);
+      setLoadingBuy(false);
+
     },
     onError: (error) => {
+      setLoadingBuy(false);
       setSnackbar({
         open: true,
         message: `Error al realizar la compra: ${
@@ -129,7 +133,7 @@ const RegisterBuyComponent = ({
       seen.add(item.id_producto);
       return true;
     });
-
+    setLoadingBuy(true);
     const transformedArray = filteredRegistro.map((item) => ({
       detalleCompraData: {
         id_proveedor: item.id_proveedor,
@@ -307,6 +311,8 @@ const RegisterBuyComponent = ({
               setRegistroCombinado={setRegistroCombinado}
               handleFinalize={handleFinalize}
               numeroLote={loteNumber}
+              loadingBuy={loadingBuy}
+              setLoadingBuy={setLoadingBuy}
             />
           </Grid>
         </Grid>

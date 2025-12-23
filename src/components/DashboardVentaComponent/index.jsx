@@ -36,7 +36,7 @@ function DashboardVentaComponent({
   const [precio, setPrecio] = useState();
   const [totalPrice, setTotalPrice] = useState();
   const [lote, setLote] = useState();
-
+  const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -166,9 +166,13 @@ function DashboardVentaComponent({
         if (cancelForm) cancelForm();
         if (setRestoreDenom) setRestoreDenom();
         // handlePrint();
+        setLoading(false);
+
       },
       onError: (error) => {
         setProductosSeleccionados([]);
+        setLoading(false);
+
         setSnackbar({
           open: true,
           message: `Error al procesar la venta: ${error.message}`,
@@ -196,7 +200,7 @@ function DashboardVentaComponent({
       });
       return;
     }
-
+    setLoading(true);
     setIsProcessing(true);
     setShouldMutate(false);
 
@@ -458,7 +462,7 @@ function DashboardVentaComponent({
         }}
       >
         <CalculatorComponent totalPrice={totalPrice} />
-        <Button variant="contained" color="primary" onClick={handleSubmit}>
+        <Button variant="contained" color="primary" onClick={handleSubmit} disabled={loading}>
           {movimientoInventario ? "Registrar Movimiento" : "Registrar Venta"}
         </Button>
       </Box>
@@ -477,9 +481,9 @@ function DashboardVentaComponent({
           onClose={() => setSnackbar({ ...snackbar, open: false })}
           severity={snackbar.severity}
           sx={{
-            fontSize: "1.8rem", // Tamaño del texto del mensaje
-            padding: "16px 24px", // Padding interno del Alert
-            alignItems: "center", // Centrar contenido verticalmente
+            fontSize: "1.8rem",
+            padding: "16px 24px",
+            alignItems: "center",
           }}
         >
           {snackbar.message}
