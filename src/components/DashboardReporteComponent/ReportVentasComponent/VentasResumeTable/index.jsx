@@ -131,7 +131,6 @@ const VentasResumeTable = ({ data }) => {
                     align="center"
                     sx={{
                       padding: "12px",
-                      fontWeight: 500,
                       color: "red",
                       fontWeight: "bold",
                     }}
@@ -142,7 +141,6 @@ const VentasResumeTable = ({ data }) => {
                     align="center"
                     sx={{
                       padding: "12px",
-                      fontWeight: 500,
                       color: "green",
                       fontWeight: "bold",
                     }}

@@ -24,7 +24,7 @@ import logo from "../../assets/images/icons/logoWhite.png";
 import FooterComponent from "../DrawerComponent/FooterComponent";
 
 function LoginComponent() {
-  const { token, setToken, user, setUser, setSuperAdmin } =
+  const { token, setToken, user, setUser, setSuperAdmin, setSucursal } =
     useContext(MainContext);
   const navigate = useNavigate();
   const classes = useStyles();
@@ -52,6 +52,8 @@ function LoginComponent() {
     onSuccess: (data) => {
       setToken(data.token);
       localStorage.setItem("token", data.token);
+      localStorage.setItem("sucursal", JSON.stringify(data.sucursal || null));
+      setSucursal(data.sucursal || null);
       if (tipo === "trabajador") {
         localStorage.setItem("user", JSON.stringify(data.user));
         setUser(data.user);

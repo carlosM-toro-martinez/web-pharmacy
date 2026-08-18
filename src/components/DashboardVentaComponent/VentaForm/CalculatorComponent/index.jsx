@@ -5,7 +5,8 @@ import useStyles from "./calculator.styles";
 function CalculatorComponent({ totalPrice }) {
   const classes = useStyles();
   const [amountGiven, setAmountGiven] = useState("");
-  const change = parseFloat(amountGiven) - totalPrice;
+  const total = Number(totalPrice) || 0;
+  const change = parseFloat(amountGiven) - total;
 
   const handleInputChange = (e) => {
     const value = e.target.value;
@@ -26,9 +27,7 @@ function CalculatorComponent({ totalPrice }) {
 
       <Box className={classes.row}>
         <Typography className={classes.label}>Total a pagar:</Typography>
-        <Typography className={classes.value}>
-          Bs {totalPrice?.toFixed(2)}
-        </Typography>
+        <Typography className={classes.value}>Bs {total.toFixed(2)}</Typography>
       </Box>
 
       <Box className={classes.row}>
@@ -49,7 +48,7 @@ function CalculatorComponent({ totalPrice }) {
         <Typography className={classes.label}>Cambio:</Typography>
         <Typography
           className={classes.value}
-          style={{ color: change < 0 ? "red" : "#2ecc71" }}
+          style={{ color: amountGiven && change < 0 ? "red" : "#2ecc71" }}
         >
           {amountGiven
             ? `Bs ${change >= 0 ? change.toFixed(2) : "Monto insuficiente"}`

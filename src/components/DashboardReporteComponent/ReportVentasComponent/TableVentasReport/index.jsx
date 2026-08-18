@@ -109,6 +109,16 @@ function TableVentasReport({ reportData, ventaToday, refetchVentas, caja }) {
   const classes = useStyles();
   const [pdfBlob, setPdfBlob] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const resumenMetodos = (reportData || []).reduce(
+    (totales, venta) => {
+      const total = Number(venta.total) || 0;
+      if (venta.metodo_pago === "QR") {
+        return { ...totales, qr: totales.qr + total };
+      }
+      return { ...totales, contado: totales.contado + total };
+    },
+    { contado: 0, qr: 0 }
+  );
 
   const generatePDF = () => {
     const doc = new jsPDF();
@@ -118,8 +128,8 @@ function TableVentasReport({ reportData, ventaToday, refetchVentas, caja }) {
       new Date(venta.fecha_venta).toLocaleDateString(),
       `${venta?.cliente?.nombre} ${venta.cliente.apellido}`,
       venta.trabajadorVenta?.nombre,
-      venta.total,
       venta.metodo_pago,
+      venta.total,
       utilidades[index]?.utilidadVenta,
     ]);
 
@@ -194,6 +204,22 @@ function TableVentasReport({ reportData, ventaToday, refetchVentas, caja }) {
         </DialogContent>
       </Dialog>
       <TableContainer component={Paper} className={classes.tableContainer}>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 2,
+            p: 2,
+            flexWrap: "wrap",
+            justifyContent: "flex-end",
+          }}
+        >
+          <Typography sx={{ fontWeight: "bold", color: "green" }}>
+            Contado: Bs. {resumenMetodos.contado.toFixed(2)}
+          </Typography>
+          <Typography sx={{ fontWeight: "bold", color: "primary.main" }}>
+            QR: Bs. {resumenMetodos.qr.toFixed(2)}
+          </Typography>
+        </Box>
         <Table>
           <TableHead style={{ backgroundColor: "#f5f5f5" }}>
             <TableRow>
@@ -336,6 +362,7 @@ function VentaRow({
       id_caja: caja?.caja?.id_caja || 1,
       fecha_venta: getLocalDateTime(),
       total: ventaAAnular?.total,
+      metodo_pago: ventaAAnular?.metodo_pago,
     }));
     
     if (transformVenta?.length === 0) {
@@ -345,6 +372,7 @@ function VentaRow({
           id_venta: ventaAAnular.id_venta,
           id_caja: caja?.caja?.id_caja || 1,
           fecha_venta: getLocalDateTime(),
+          metodo_pago: ventaAAnular?.metodo_pago,
         },
       ];
     }

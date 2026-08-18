@@ -14,6 +14,7 @@ import MenuItem from "@mui/material/MenuItem";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import EditIcon from "@mui/icons-material/Edit";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import DeleteIcon from "@mui/icons-material/Delete";
 import TextField from "@mui/material/TextField";
 import EnhancedTableHead from "./EnhancedTableHead";
 import ModalUpdateProduct from "./ModalUpdateProduct";
@@ -83,6 +84,7 @@ export default function TableProductsComponent({
   };
 
   const filteredProducts = productos
+    .filter((producto) => producto.activo !== false)
     .filter((producto) =>
       producto.nombre?.toLowerCase().includes(searchQuery.toLowerCase())
     )
@@ -115,9 +117,18 @@ export default function TableProductsComponent({
   };
 
   const handleDeleteProduct = () => {
-    productoDeleteServices(selectedidProducto);
+    deleteProductMutation.mutate(selectedidProducto);
     handleCloseMenu();
   };
+
+  const deleteProductMutation = useMutation(productoDeleteServices, {
+    onSuccess: () => {
+      refetchProducts();
+    },
+    onError: (error) => {
+      console.error("Error dando de baja producto:", error);
+    },
+  });
 
   const { mutate } = useMutation(
     ({ id, updatedPrice, updatedSalePrice, idLote, idProveedor }) =>
@@ -323,6 +334,9 @@ export default function TableProductsComponent({
                         </MenuItem>
                         <MenuItem onClick={() => handleOpenViewModal()}>
                           <VisibilityIcon /> Ver
+                        </MenuItem>
+                        <MenuItem onClick={handleDeleteProduct}>
+                          <DeleteIcon color="error" /> Dar de baja
                         </MenuItem>
                       </Menu>
                     </TableCell>

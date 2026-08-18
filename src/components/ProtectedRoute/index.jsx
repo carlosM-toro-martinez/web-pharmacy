@@ -13,7 +13,15 @@ const ProtectedRoute = ({ allowedPermissions = [] }) => {
     return <Outlet />;
   }
   if (user) {
-    const userPermissions = user.rol.permisos.map((permiso) => permiso.nombre);
+    const userRole = user?.rol?.nombre?.toLowerCase();
+    const isAdministrator = userRole === "administrador";
+
+    if (isAdministrator) {
+      return <Outlet />;
+    }
+
+    const userPermissions =
+      user?.rol?.permisos?.map((permiso) => permiso.nombre) || [];
 
     const hasPermission = allowedPermissions.some((permiso) =>
       userPermissions.includes(permiso)

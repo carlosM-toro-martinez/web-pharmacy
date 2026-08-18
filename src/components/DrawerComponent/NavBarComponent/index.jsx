@@ -17,7 +17,8 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 function NavBarComponent({ handleDrawerOpen, open, user }) {
-  const { setToken, setUser, setSuperAdmin } = useContext(MainContext);
+  const { setToken, setUser, setSuperAdmin, sucursal, setSucursal } =
+    useContext(MainContext);
   const [anchorEl, setAnchorEl] = useState(null);
   const openMenu = Boolean(anchorEl);
 
@@ -37,6 +38,8 @@ function NavBarComponent({ handleDrawerOpen, open, user }) {
     setUser();
     localStorage.setItem("superAdmin", null);
     setSuperAdmin();
+    localStorage.setItem("sucursal", null);
+    setSucursal(null);
     navigate("/login");
 
     setAnchorEl(null);
@@ -103,6 +106,17 @@ function NavBarComponent({ handleDrawerOpen, open, user }) {
                 >
                   {fechaActual} — {horaActual}
                 </Typography>
+                {sucursal?.nombre && (
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "primary.main",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Sucursal: {sucursal.nombre}
+                  </Typography>
+                )}
               </Box>
               <IconButton
                 color="inherit"

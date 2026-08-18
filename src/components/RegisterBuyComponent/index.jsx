@@ -125,6 +125,10 @@ const RegisterBuyComponent = ({
   });
 
   const handleFinalize = () => {
+    if (loadingBuy || buyMutation.isLoading) {
+      return;
+    }
+
     const seen = new Set();
     const filteredRegistro = registroCombinado.filter((item) => {
       if (seen.has(item.id_producto)) {
@@ -277,6 +281,7 @@ const RegisterBuyComponent = ({
               type="submit"
               variant="contained"
               color="primary"
+              disabled={loadingBuy || buyMutation.isLoading}
               style={{
                 marginTop: "20px",
                 fontWeight: "bold",
@@ -295,6 +300,7 @@ const RegisterBuyComponent = ({
             <Button
               onClick={handleOpenProductoModal}
               variant="contained"
+              disabled={loadingBuy || buyMutation.isLoading}
               style={{
                 marginTop: "20px",
                 fontWeight: "bold",

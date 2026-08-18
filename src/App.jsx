@@ -27,6 +27,7 @@ import ReportProveedoresComponent from "./components/DashboardReporteComponent/R
 import ReportProductosComponent from "./components/DashboardReporteComponent/ReportProductosComponent";
 import EditProductProviders from "./pages/Almacenes/EditProductProviders";
 import ReportWorkersComponent from "./components/DashboardReporteComponent/ReportWorkersComponent";
+import Ajustes from "./pages/Ajustes";
 
 function App() {
   const queryClient = new QueryClient();
@@ -115,6 +116,11 @@ function App() {
                 }
               >
                 <Route path="/movimiento-caja" element={<MovimientoCaja />} />
+              </Route>
+              <Route
+                element={<ProtectedRoute allowedPermissions={["ajustes"]} />}
+              >
+                <Route path="/ajustes" element={<Ajustes />} />
               </Route>
               <Route
                 element={

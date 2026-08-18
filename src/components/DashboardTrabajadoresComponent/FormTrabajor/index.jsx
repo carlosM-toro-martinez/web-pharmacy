@@ -20,6 +20,7 @@ function FormTrabajador({
   permisos,
   rol,
   refetchRol,
+  sucursales = [],
 }) {
   const [showPassword, setShowPassword] = useState(false);
   const [openModal, setOpenModal] = useState(false);
@@ -32,6 +33,12 @@ function FormTrabajador({
     const selectedRoleId = event.target.value;
     handleChange({
       target: { name: "id_rol", value: selectedRoleId },
+    });
+  };
+
+  const handleSucursalChange = (event) => {
+    handleChange({
+      target: { name: "id_sucursal", value: event.target.value },
     });
   };
 
@@ -145,6 +152,26 @@ function FormTrabajador({
               <IconButton onClick={handleOpenModal} color="primary">
                 <Add />
               </IconButton>
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={6}>
+          <FormControl fullWidth className={classes.input}>
+            <InputLabel>Sucursal</InputLabel>
+            <Select
+              value={formData.id_sucursal || ""}
+              onChange={handleSucursalChange}
+              label="Sucursal"
+            >
+              <MenuItem value="">Sin asignar / Principal</MenuItem>
+              {sucursales.map((sucursal) => (
+                <MenuItem
+                  key={sucursal.id_sucursal}
+                  value={sucursal.id_sucursal}
+                >
+                  {sucursal.nombre}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
         </Grid>

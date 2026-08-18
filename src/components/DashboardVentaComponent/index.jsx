@@ -1,5 +1,12 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { Button, Grid, Box, Snackbar, Typography } from "@mui/material";
+import {
+  Button,
+  Grid,
+  Box,
+  Snackbar,
+  Typography,
+  CircularProgress,
+} from "@mui/material";
 import Alert from "@mui/material/Alert";
 import { useMutation } from "react-query";
 import ClientModal from "./ClientModal";
@@ -106,18 +113,26 @@ function DashboardVentaComponent({
         return array.find((item) => item.lote && item.lote.id_lote === idLote);
       }
 
-      function calcularCantidad(
-        cantidadPorCaja,
-        cantidadInventario,
-        cantidadVenta
-      ) {
-        let cantidad = 0;
-        if (cantidadPorCaja > cantidadVenta) {
-          cantidad = cantidadInventario === cantidadVenta ? 1 : 0;
-        } else {
-          cantidad = Math.floor(cantidadVenta / cantidadPorCaja);
+      function calcularCantidad(producto, inventarioLote) {
+        const cantidad = Number(producto.cantidad) || 0;
+        const cantidadUnidad = Number(producto.cantidad_unidad) || 0;
+        const cantidadPorCaja =
+          Number(inventarioLote?.lote?.cantidadPorCaja) || 0;
+        const cantidadInventario = Number(inventarioLote?.subCantidad) || 0;
+
+        if (cantidad > 0 && cantidadUnidad <= 0) {
+          return cantidad;
         }
-        return cantidad;
+
+        if (cantidadUnidad <= 0 || cantidadPorCaja <= 0) {
+          return 0;
+        }
+
+        if (cantidadPorCaja > cantidadUnidad) {
+          return cantidadInventario === cantidadUnidad ? 1 : 0;
+        }
+
+        return Math.floor(cantidadUnidad / cantidadPorCaja);
       }
       const payload = {
         ventaData: {
@@ -130,19 +145,19 @@ function DashboardVentaComponent({
           metodo_pago: metodoPago,
         },
         id_caja: caja?.caja?.id_caja || 1,
-        detalles: productosSeleccionados.map((p) => ({
-          id_producto: p.id_producto,
-          id_lote: p.id_lote,
-          cantidad: calcularCantidad(
-            buscarPorIdLote(p.inventarios, p.id_lote)?.lote?.cantidadPorCaja,
-            buscarPorIdLote(p.inventarios, p.id_lote)?.subCantidad,
-            p.cantidad_unidad
-          ),
-          cantidad_unidad: p.cantidad_unidad,
-          descripcion: p.descripcion,
-          precio: p.precio,
-          clienteId: ventaData.clienteId,
-        })),
+        detalles: productosSeleccionados.map((p) => {
+          const inventarioLote = buscarPorIdLote(p.inventarios, p.id_lote);
+
+          return {
+            id_producto: p.id_producto,
+            id_lote: p.id_lote,
+            cantidad: calcularCantidad(p, inventarioLote),
+            cantidad_unidad: Number(p.cantidad_unidad) || 0,
+            descripcion: p.descripcion,
+            precio: Number(p.precio) || 0,
+            clienteId: ventaData.clienteId,
+          };
+        }),
       };
 
       if (movimientoInventario) {
@@ -162,12 +177,11 @@ function DashboardVentaComponent({
         });
         refetchProducts();
         refetchCaja();
-        refetchVentas();
+        refetchVentas?.();
         if (cancelForm) cancelForm();
         if (setRestoreDenom) setRestoreDenom();
         // handlePrint();
         setLoading(false);
-
       },
       onError: (error) => {
         setProductosSeleccionados([]);
@@ -175,7 +189,9 @@ function DashboardVentaComponent({
 
         setSnackbar({
           open: true,
-          message: `Error al procesar la venta: ${error.message}`,
+          message: `Error al procesar la venta: ${
+            error?.message || error || "Intente nuevamente."
+          }`,
           severity: "error",
         });
       },
@@ -183,6 +199,10 @@ function DashboardVentaComponent({
   );
 
   const handleSubmit = async () => {
+    if (loading || isProcessing || ventaMutation.isLoading) {
+      return;
+    }
+
     if (!totalPrice || totalPrice <= 0) {
       setSnackbar({
         open: true,
@@ -292,7 +312,6 @@ function DashboardVentaComponent({
               productoSeleccionado,
               clienteSeleccionado,
               loteData.lote.id_lote,
-              peso,
               precioMetodo,
               loteData.subCantidad,
               loteData.cantidad
@@ -302,7 +321,6 @@ function DashboardVentaComponent({
               productoSeleccionado,
               clienteSeleccionado,
               loteData.lote.id_lote,
-              peso,
               precioMetodo,
               unidadesRestantes,
               Math.floor(cantidadCajas)
@@ -462,8 +480,27 @@ function DashboardVentaComponent({
         }}
       >
         <CalculatorComponent totalPrice={totalPrice} />
-        <Button variant="contained" color="primary" onClick={handleSubmit} disabled={loading}>
-          {movimientoInventario ? "Registrar Movimiento" : "Registrar Venta"}
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleSubmit}
+          disabled={loading || isProcessing || ventaMutation.isLoading}
+          sx={{
+            minWidth: "14rem",
+            minHeight: "3rem",
+            fontWeight: "bold",
+          }}
+        >
+          {loading || isProcessing || ventaMutation.isLoading ? (
+            <>
+              <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+              Procesando...
+            </>
+          ) : movimientoInventario ? (
+            "Registrar Movimiento"
+          ) : (
+            "Registrar Venta"
+          )}
         </Button>
       </Box>
       <ClientModal

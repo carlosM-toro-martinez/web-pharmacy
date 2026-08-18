@@ -17,6 +17,12 @@ function useMain() {
     const savedUser = localStorage.getItem("user");
     return savedUser ? JSON.parse(savedUser) : null;
   });
+  const [sucursal, setSucursal] = useState(() => {
+    const savedSucursal = localStorage.getItem("sucursal");
+    return savedSucursal && savedSucursal !== "null"
+      ? JSON.parse(savedSucursal)
+      : null;
+  });
   const [products, setProducts] = useState();
 
   const { data, isLoading, error, refetch } = useQuery(`cajaService`, () =>
@@ -53,8 +59,10 @@ function useMain() {
         if (res?.remainingSeconds === 0) {
           localStorage.removeItem("token");
           localStorage.removeItem("user");
+          localStorage.removeItem("sucursal");
           setToken(null);
           setUser(null);
+          setSucursal(null);
           setAuth(false);
         }
       },
@@ -74,6 +82,24 @@ function useMain() {
       setAuth(false);
     }
   }, [token]);
+
+  useEffect(() => {
+    if (!token || sucursal?.id_sucursal) return;
+
+    const cargarSucursalPrincipal = async () => {
+      try {
+        const resp = await fetch(`${buildApiUri()}/v1/sucursales/principal`);
+        if (!resp.ok) return;
+        const sucursalPrincipal = await resp.json();
+        localStorage.setItem("sucursal", JSON.stringify(sucursalPrincipal));
+        setSucursal(sucursalPrincipal);
+      } catch (error) {
+        console.error("No se pudo cargar la sucursal principal", error);
+      }
+    };
+
+    cargarSucursalPrincipal();
+  }, [token, sucursal]);
 
   useEffect(() => {
     if (!isLoading && !error) {
@@ -102,6 +128,8 @@ function useMain() {
     setProducts,
     setSuperAdmin,
     setUser,
+    sucursal,
+    setSucursal,
     setToken,
     setAuth,
   };

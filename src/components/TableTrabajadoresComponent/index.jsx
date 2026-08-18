@@ -12,11 +12,14 @@ import {
   MenuItem,
   Snackbar,
   Alert,
+  Select,
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
-import { useMutation } from "react-query";
+import { useMutation, useQuery } from "react-query";
 import useStyles from "./tableTrabajadores.styles";
 import trabajadorDeleteServices from "../../async/services/delete/trabajadorDeleteServices";
+import sucursalesService from "../../async/services/get/sucursalesService";
+import trabajadorUpdateService from "../../async/services/put/trabajadorUpdateService";
 
 function TableTrabajadoresComponent({ trabajadores, onEdit, refetch }) {
   const classes = useStyles();
@@ -27,6 +30,7 @@ function TableTrabajadoresComponent({ trabajadores, onEdit, refetch }) {
     message: "",
     severity: "success",
   });
+  const { data: sucursales = [] } = useQuery("sucursales", sucursalesService);
 
   const deleteMutation = useMutation(trabajadorDeleteServices, {
     onSuccess: () => {
@@ -41,6 +45,24 @@ function TableTrabajadoresComponent({ trabajadores, onEdit, refetch }) {
       setSnackbar({
         open: true,
         message: `Error: ${error.message}`,
+        severity: "error",
+      });
+    },
+  });
+
+  const updateMutation = useMutation(trabajadorUpdateService, {
+    onSuccess: () => {
+      setSnackbar({
+        open: true,
+        message: "Sucursal del trabajador actualizada.",
+        severity: "success",
+      });
+      refetch();
+    },
+    onError: (error) => {
+      setSnackbar({
+        open: true,
+        message: `Error: ${error.message || error}`,
         severity: "error",
       });
     },
@@ -63,14 +85,19 @@ function TableTrabajadoresComponent({ trabajadores, onEdit, refetch }) {
     handleMenuClose();
   };
 
+  const handleSucursalChange = (trabajador, idSucursal) => {
+    updateMutation.mutate({
+      id_trabajador: trabajador.id_trabajador,
+      payload: { id_sucursal: idSucursal || null },
+    });
+  };
+
   const handleSnackbarClose = () => {
     setSnackbar({ ...snackbar, open: false });
   };
-  console.log(trabajadores);
   const trabajadoresActivos = trabajadores.filter(
     (trabajador) => trabajador.estado === true
   );
-  console.log(trabajadoresActivos);
 
   return (
     <Paper>
@@ -89,6 +116,7 @@ function TableTrabajadoresComponent({ trabajadores, onEdit, refetch }) {
                 Fecha de Contratación
               </TableCell>
               <TableCell sx={{ fontWeight: "bold" }}>Rol</TableCell>
+              <TableCell sx={{ fontWeight: "bold" }}>Sucursal</TableCell>
               <TableCell sx={{ fontWeight: "bold" }}>Username</TableCell>
               <TableCell sx={{ fontWeight: "bold" }}>Estado</TableCell>
               <TableCell sx={{ fontWeight: "bold" }}>Acciones</TableCell>
@@ -103,6 +131,27 @@ function TableTrabajadoresComponent({ trabajadores, onEdit, refetch }) {
                 <TableCell>{trabajador.fecha_contratacion}</TableCell>
                 <TableCell style={{ textTransform: "capitalize" }}>
                   {trabajador.rol?.nombre}
+                </TableCell>
+                <TableCell>
+                  <Select
+                    size="small"
+                    value={trabajador.id_sucursal || ""}
+                    onChange={(e) =>
+                      handleSucursalChange(trabajador, e.target.value)
+                    }
+                    displayEmpty
+                    disabled={updateMutation.isLoading}
+                  >
+                    <MenuItem value="">Principal</MenuItem>
+                    {sucursales.map((sucursal) => (
+                      <MenuItem
+                        key={sucursal.id_sucursal}
+                        value={sucursal.id_sucursal}
+                      >
+                        {sucursal.nombre}
+                      </MenuItem>
+                    ))}
+                  </Select>
                 </TableCell>
                 <TableCell>{trabajador.username}</TableCell>
                 <TableCell sx={{ color: "green" }}>

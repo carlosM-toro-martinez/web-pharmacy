@@ -179,7 +179,11 @@ const RegistroTableComponent = ({
           }}
           disabled={loadingBuy}
         >
-          {registroCombinado.length > 0 ? "Finalizar" : "Cancelar"}
+          {loadingBuy
+            ? "Procesando..."
+            : registroCombinado.length > 0
+            ? "Finalizar"
+            : "Cancelar"}
         </Button>
       </Box>
     </Box>

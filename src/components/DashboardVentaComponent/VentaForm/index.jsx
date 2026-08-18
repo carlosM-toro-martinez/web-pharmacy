@@ -58,17 +58,35 @@ const VentaForm = ({
 
     const lotesFiltrados =
       newValue?.inventarios
-        .filter((inv) => inv.cantidad >= 1 || inv.peso > 0)
+        .filter(
+          (inv) =>
+            Number(inv.cantidad) > 0 ||
+            Number(inv.subCantidad) > 0 ||
+            Number(inv.peso) > 0
+        )
         .map((inv) => inv) || [];
 
+    const totalCantidad = lotesFiltrados.reduce(
+      (total, inv) => total + (Number(inv.cantidad) || 0),
+      0
+    );
+    const totalSubCantidad = lotesFiltrados.reduce(
+      (total, inv) => total + (Number(inv.subCantidad) || 0),
+      0
+    );
+    const totalPeso = lotesFiltrados.reduce(
+      (total, inv) => total + (Number(inv.peso) || 0),
+      0
+    );
+
     setLotesProducto(lotesFiltrados);
-    setCantLimit(lotesFiltrados[0]?.lote?.producto?.stock);
-    setCantUnitLimit(lotesFiltrados[0]?.lote?.producto?.subCantidad);
+    setCantLimit(totalCantidad);
+    setCantUnitLimit(totalSubCantidad);
     setPesoLimit(
-      lotesFiltrados[0]?.lote?.producto?.peso === "NaN" ||
-        !lotesFiltrados[0]?.lote?.producto?.peso
+      totalPeso === "NaN" ||
+        !totalPeso
         ? 0
-        : lotesFiltrados[0]?.lote?.producto?.peso
+        : totalPeso
     );
 
     setCantidadPorCaja(
@@ -89,25 +107,25 @@ const VentaForm = ({
           productoId,
           newValue,
           lotesFiltrados,
-          cantLimit: lotesFiltrados[0]?.lote?.producto?.stock,
-          cantUnitLimit: lotesFiltrados[0]?.lote?.producto?.subCantidad,
+          cantLimit: totalCantidad,
+          cantUnitLimit: totalSubCantidad,
           pesoLimit:
-            lotesFiltrados[0]?.lote?.producto?.peso === "NaN" ||
-            !lotesFiltrados[0]?.lote?.producto?.peso
+            totalPeso === "NaN" ||
+            !totalPeso
               ? 0
-              : lotesFiltrados[0]?.lote?.producto?.peso,
+              : totalPeso,
           cantidadPorCaja: lotesFiltrados[0]?.lote?.cantidadPorCaja || null,
           loteMasAntiguo: loteMasAntiguo,
-          peso: lotesFiltrados[0]?.lote?.producto?.peso > 0 ? 1 : null,
+          peso: totalPeso > 0 ? 1 : null,
           cantidad:
-            lotesFiltrados[0]?.lote?.producto?.stock > 0 &&
-            lotesFiltrados[0]?.lote?.producto?.subCantidad === 0
+            totalCantidad > 0 &&
+            totalSubCantidad === 0
               ? 1
               : null,
           cantidadPorUnidad:
-            (lotesFiltrados[0]?.lote?.producto?.subCantidad > 0 &&
-              lotesFiltrados[0]?.lote?.producto?.peso <= 0) ||
-            lotesFiltrados[0]?.lote?.producto?.peso === "NaN"
+            (totalSubCantidad > 0 &&
+              totalPeso <= 0) ||
+            totalPeso === "NaN"
               ? 1
               : null,
           ventaData,

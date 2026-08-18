@@ -60,13 +60,31 @@ const SalidaForm = ({
     const lotesFiltrados =
       productos
         .find((producto) => producto.id_producto === productoId)
-        ?.inventarios.filter((inv) => inv.cantidad >= 1 || inv.peso > 0)
+        ?.inventarios.filter(
+          (inv) =>
+            Number(inv.cantidad) > 0 ||
+            Number(inv.subCantidad) > 0 ||
+            Number(inv.peso) > 0
+        )
         .map((inv) => inv) || [];
 
+    const totalCantidad = lotesFiltrados.reduce(
+      (total, inv) => total + (Number(inv.cantidad) || 0),
+      0
+    );
+    const totalSubCantidad = lotesFiltrados.reduce(
+      (total, inv) => total + (Number(inv.subCantidad) || 0),
+      0
+    );
+    const totalPeso = lotesFiltrados.reduce(
+      (total, inv) => total + (Number(inv.peso) || 0),
+      0
+    );
+
     setLotesProducto(lotesFiltrados);
-    setCantLimit(lotesFiltrados[0]?.lote?.producto?.stock);
-    setCantUnitLimit(lotesFiltrados[0]?.lote?.producto?.subCantidad);
-    setPesoLimit(lotesFiltrados[0]?.lote?.producto?.peso);
+    setCantLimit(totalCantidad);
+    setCantUnitLimit(totalSubCantidad);
+    setPesoLimit(totalPeso);
 
     setCantidadPorCaja(
       lotesFiltrados[0]?.lote?.cantidadPorCaja

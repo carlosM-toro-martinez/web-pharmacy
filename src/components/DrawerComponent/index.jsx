@@ -8,6 +8,7 @@ import StoreIcon from "@mui/icons-material/Store";
 import PersonIcon from "@mui/icons-material/Person";
 import GroupIcon from "@mui/icons-material/Group";
 import RotateLeftIcon from "@mui/icons-material/RotateLeft";
+import SettingsIcon from "@mui/icons-material/Settings";
 import { Link, useLocation } from "react-router-dom";
 import useStyles from "./drawer.styles";
 import { MainContext } from "../../context/MainContext";
@@ -17,7 +18,7 @@ import logo from "../../assets/images/icons/logoWhite.png";
 import logo2 from "../../assets/images/logos/3.png";
 
 export default function DrawerComponent({ children }) {
-  const { open, setOpen, user } = useContext(MainContext);
+  const { open, setOpen, user, superAdmin } = useContext(MainContext);
   const classes = useStyles({ open });
   const location = useLocation();
 
@@ -36,7 +37,17 @@ export default function DrawerComponent({ children }) {
       name: "Movimientos",
       icon: <RotateLeftIcon />,
     },
+    { path: "/ajustes", name: "Ajustes", icon: <SettingsIcon /> },
   ];
+
+  const userPermissions =
+    user?.rol?.permisos?.map((permiso) => permiso.nombre) || [];
+  const isAdministrator = user?.rol?.nombre?.toLowerCase() === "administrador";
+
+  const visibleRoutes = routes.filter((route) => {
+    if (route.path !== "/ajustes") return true;
+    return superAdmin || isAdministrator || userPermissions.includes("ajustes");
+  });
 
   return (
     <Box
@@ -86,7 +97,7 @@ export default function DrawerComponent({ children }) {
         </Box>
         <Divider />
         <List>
-          {routes.map(({ path, name, icon }) => {
+          {visibleRoutes.map(({ path, name, icon }) => {
             const isActive =
               path === "/"
                 ? location.pathname === path

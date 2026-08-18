@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { Grid, Button, Snackbar, IconButton } from "@mui/material";
-import { useMutation } from "react-query";
+import { useMutation, useQuery } from "react-query";
 import Alert from "@mui/material/Alert";
 import trabajadorAddServices from "../../async/services/post/trabajadorAddServices";
 import useStyles from "./dashboardTrabajadores.styles";
 import FormTrabajador from "./FormTrabajor";
+import sucursalesService from "../../async/services/get/sucursalesService";
 
 function DashboardTrabajadoresComponent({
   permisos,
@@ -23,7 +24,9 @@ function DashboardTrabajadoresComponent({
     username: "",
     password: "",
     id_rol: 0,
+    id_sucursal: "",
   });
+  const { data: sucursales = [] } = useQuery("sucursales", sucursalesService);
 
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -59,6 +62,7 @@ function DashboardTrabajadoresComponent({
         username: "",
         password: "",
         id_rol: 0,
+        id_sucursal: "",
       });
     },
     onError: (error) => {
@@ -84,6 +88,7 @@ function DashboardTrabajadoresComponent({
         rol={rol}
         refetchRol={refetchRol}
         permisos={permisos}
+        sucursales={sucursales}
       />
 
       <Grid container spacing={2}>
@@ -102,6 +107,7 @@ function DashboardTrabajadoresComponent({
                 username: "",
                 password: "",
                 id_rol: 0,
+                id_sucursal: "",
               })
             }
           >

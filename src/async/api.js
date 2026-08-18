@@ -1,7 +1,21 @@
 const getHeaders = () => {
+  const token = localStorage.getItem("token");
+  const sucursal = localStorage.getItem("sucursal");
+  let parsedSucursal = null;
+  try {
+    parsedSucursal = sucursal && sucursal !== "null" ? JSON.parse(sucursal) : null;
+  } catch {
+    parsedSucursal = null;
+  }
   const headers = {
     "Content-Type": "application/json",
   };
+  if (token && token !== "null") {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  if (parsedSucursal?.id_sucursal) {
+    headers["X-Sucursal-Id"] = parsedSucursal.id_sucursal;
+  }
   return headers;
 };
 
