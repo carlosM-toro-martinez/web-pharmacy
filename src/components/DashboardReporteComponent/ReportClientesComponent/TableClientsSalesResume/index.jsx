@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import { useQuery, useMutation } from "react-query";
 import clientesService from "../../../../async/services/get/clientesService";
+import { formatLapazDate } from "../../../../utils/dateUtils";
 import reportClientsSalesResumeServices from "../../../../async/services/get/reportClientsSalesResumeServices";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
@@ -102,7 +103,7 @@ function TableClientsSalesResume() {
     const doc = new jsPDF();
     doc.text("Reporte de Ventas por Cliente", 80, 10);
     const tableData = mutation.data.map((venta) => [
-      new Date(venta?.fecha_venta).toLocaleDateString(),
+      formatLapazDate(venta?.fecha_venta, "date"),
       venta?.metodo_pago,
       venta?.cliente?.nombre || "N/A",
       venta?.cliente?.apellido || "N/A",
@@ -175,7 +176,7 @@ function TableClientsSalesResume() {
               {mutation.data.map((venta) => (
                 <TableRow key={venta.id_venta}>
                   <TableCell align="center">
-                    {new Date(venta?.fecha_venta).toLocaleDateString()}
+                    {formatLapazDate(venta?.fecha_venta, "date")}
                   </TableCell>
                   <TableCell align="center">{venta?.metodo_pago}</TableCell>
                   <TableCell align="center">

@@ -17,6 +17,9 @@ import { MainContext } from "../../../context/MainContext";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import detalleCompraDeleteServices from "../../../async/services/delete/detalleCompraDeleteServices";
 import { useMutation } from "react-query";
+import { clearAlmacenesDraft } from "../../../utils/almacenesDraftStorage";
+import { formatLapazDate } from "../../../utils/dateUtils";
+import ProductoCellComponent from "../../ProductoCellComponent";
 
 const RegistroTableComponent = ({
   registroCombinado,
@@ -69,6 +72,8 @@ const RegistroTableComponent = ({
   };
 
   const handleCancelar = () => {
+    clearAlmacenesDraft();
+    setRegistroCombinado([]);
     navigate("/almacenes");
   };
 
@@ -126,14 +131,18 @@ const RegistroTableComponent = ({
           <TableBody>
             {registroCombinado.map((registro, index) => (
               <TableRow key={index}>
-                <TableCell style={{ textTransform: "capitalize" }}>
-                  {registro?.producto}
+                <TableCell>
+                  <ProductoCellComponent
+                    nombre={registro?.producto}
+                    concentracion={registro?.concentracion}
+                    forma_farmaceutica={registro?.forma_farmaceutica}
+                  />
                 </TableCell>
                 <TableCell style={{ textTransform: "capitalize" }}>
                   {registro?.numero_lote}
                 </TableCell>
                 <TableCell>
-                  {new Date(registro?.fecha_caducidad).toLocaleDateString()}
+                  {formatLapazDate(registro?.fecha_caducidad, "date")}
                 </TableCell>
                 <TableCell>
                   {`${registro?.cantidad}`}
@@ -170,6 +179,19 @@ const RegistroTableComponent = ({
         </TableRow>
       </TableContainer>
       <Box style={{ display: "flex", justifyContent: "center", gap: 10 }}>
+        {registroCombinado.length > 0 && (
+          <Button
+            variant="contained"
+            onClick={handleCancelar}
+            style={{
+              marginTop: "20px",
+              backgroundColor: "red",
+            }}
+            disabled={loadingBuy}
+          >
+            Cancelar
+          </Button>
+        )}
         <Button
           variant="contained"
           onClick={registroCombinado.length > 0 ? handleRoute : handleCancelar}

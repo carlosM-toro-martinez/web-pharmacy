@@ -36,14 +36,14 @@ function ModalViewProduct({
   mutate,
   mutateDelete,
   proveedoresData,
+  idSucursal,
 }) {
   const [editedSalePrice, setEditedSalePrice] = useState("");
   const [editedProviderId, setEditedProviderId] = useState("");
-  console.log(proveedoresData);
 
   const { data, isLoading, error } = useQuery(
-    `InventarioProducts`,
-    () => productosInventarioService(product?.id_producto),
+    ["InventarioProducts", product?.id_producto, idSucursal],
+    () => productosInventarioService(product?.id_producto, idSucursal),
     {
       enabled: !!product?.id_producto,
     }
@@ -85,17 +85,31 @@ function ModalViewProduct({
 
   const handleSave = (index) => {
     const inventario = data.inventarios[index];
-    const item = inventario.detalleCompra.id_detalle;
+    const item = inventario.detalleCompra?.id_detalle;
     const idLote = inventario.id_lote;
 
-    if (item) {
+    const updatedPrice = editedPrice !== "" ? parseFloat(editedPrice) : undefined;
+    const updatedSalePrice =
+      editedSalePrice !== "" ? parseFloat(editedSalePrice) : undefined;
+    const idProveedor = editedProviderId || undefined;
+
+    if (
+      item ||
+      updatedPrice !== undefined ||
+      updatedSalePrice !== undefined ||
+      idProveedor !== undefined
+    ) {
       mutate({
-        id: item,
-        updatedPrice: editedPrice !== "" ? parseFloat(editedPrice) : undefined,
-        updatedSalePrice:
-          editedSalePrice !== "" ? parseFloat(editedSalePrice) : undefined,
+        id: item ?? 0,
+        // Este lote puede no tener todavia un DetalleCompra (ej. viene de
+        // stock inicial o transferencia sin costo/proveedor); si no lo
+        // tiene, el backend crea uno nuevo y lo vincula al lote, en vez de
+        // descartar en silencio lo que se edita.
+        idProducto: product?.id_producto,
+        updatedPrice,
+        updatedSalePrice,
         idLote: idLote,
-        idProveedor: editedProviderId || undefined,
+        idProveedor,
       });
     }
     setEditingRow(null);
@@ -113,11 +127,11 @@ function ModalViewProduct({
 
   const handleDelete = (inventario) => {
     const dataDelete = {
-      id_producto: inventario.detalleCompra.id_producto,
+      id_producto: inventario.detalleCompra?.id_producto ?? product?.id_producto,
       id_lote: inventario.id_lote,
       id_inventario: inventario.id_inventario || null,
       id_movimiento: inventario.id_movimiento || null,
-      id_detalle: inventario.detalleCompra.id_detalle,
+      id_detalle: inventario.detalleCompra?.id_detalle ?? null,
       cantidad: inventario.cantidad,
       subCantidad: inventario.subCantidad,
       peso: parseFloat(inventario.peso) || 0,
@@ -125,14 +139,14 @@ function ModalViewProduct({
 
     mutateDelete({
       dataDelete,
-      idDetalle: inventario.detalleCompra.id_detalle,
+      idDetalle: inventario.detalleCompra?.id_detalle ?? null,
     });
   };
 
   const calcularUtilidad = (cantidad, precioTotalCompra, precioVentaUnidad) => {
-    if (cantidad <= 0) return 0;
+    if (!cantidad || cantidad <= 0) return 0;
     const costoUnitario = precioTotalCompra / cantidad;
-    const utilidadUnidad = precioVentaUnidad - costoUnitario;
+    const utilidadUnidad = (precioVentaUnidad ?? 0) - costoUnitario;
     return Number(utilidadUnidad.toFixed(2));
   };
   console.log(data);
@@ -185,13 +199,15 @@ function ModalViewProduct({
                   {/* <TableCell>{inventario.cantidadPorCaja ?? 0}</TableCell> */}
                   <TableCell>{inventario.subCantidad}</TableCell>
                   <TableCell sx={{ fontWeight: "bold", color: "green" }}>
-                    {calcularUtilidad(
-                      inventario.detalleCompra.cantidad *
-                        inventario.cantidadPorCaja,
-                      inventario.detalleCompra.precio_unitario *
-                        inventario.detalleCompra.cantidad,
-                      inventario.precioVenta
-                    )}
+                    {inventario.detalleCompra
+                      ? calcularUtilidad(
+                          inventario.detalleCompra.cantidad *
+                            inventario.cantidadPorCaja,
+                          inventario.detalleCompra.precio_unitario *
+                            inventario.detalleCompra.cantidad,
+                          inventario.precioVenta
+                        )
+                      : "-"}
                   </TableCell>
                   <TableCell>
                     {editingRow === index ? (
@@ -231,6 +247,8 @@ function ModalViewProduct({
                         size="small"
                         sx={{ width: "8rem" }}
                       />
+                    ) : !inventario.detalleCompra ? (
+                      "-"
                     ) : inventario.cantidadPorCaja ? (
                       inventario.detalleCompra.precio_unitario /
                       inventario.cantidadPorCaja
@@ -295,8 +313,9 @@ function ModalViewProduct({
                           onClick={() =>
                             handleEdit(
                               index,
-                              inventario.detalleCompra.precio_unitario,
-                              inventario.precioVenta
+                              inventario.detalleCompra?.precio_unitario ?? "",
+                              inventario.precioVenta,
+                              inventario.detalleCompra?.proveedor?.id_proveedor
                             )
                           }
                           size="small"

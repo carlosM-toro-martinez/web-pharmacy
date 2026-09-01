@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Grid,
   Box,
@@ -8,6 +8,7 @@ import {
   MenuItem,
 } from "@mui/material";
 import ProductSelectedComponent from "./ProductSelectedComponent";
+import { formatLapazDate } from "../../../utils/dateUtils";
 
 const VentaForm = ({
   ventaData,
@@ -52,19 +53,19 @@ const VentaForm = ({
   }, [clientes]);
 
   const handleProductoChange = (productoId, newValue) => {
-    setMetodosVenta(newValue?.inventarios[0].lote?.producto?.metodosVenta);
+    const primerInventario = newValue?.inventarios?.[0];
+    setMetodosVenta(
+      primerInventario?.lote?.producto?.metodosVenta || newValue?.metodosVenta || []
+    );
 
     setProducto(productoId);
 
-    const lotesFiltrados =
-      newValue?.inventarios
-        .filter(
-          (inv) =>
-            Number(inv.cantidad) > 0 ||
-            Number(inv.subCantidad) > 0 ||
-            Number(inv.peso) > 0
-        )
-        .map((inv) => inv) || [];
+    const lotesFiltrados = (newValue?.inventarios || []).filter(
+      (inv) =>
+        Number(inv.cantidad) > 0 ||
+        Number(inv.subCantidad) > 0 ||
+        Number(inv.peso) > 0
+    );
 
     const totalCantidad = lotesFiltrados.reduce(
       (total, inv) => total + (Number(inv.cantidad) || 0),
@@ -97,10 +98,12 @@ const VentaForm = ({
 
     if (lotesFiltrados.length > 0) {
       const loteMasAntiguo = newValue?.inventarios?.reduce((prev, current) => {
-        const prevDate = new Date(prev.lote.fecha_caducidad);
-        const currentDate = new Date(current.lote.fecha_caducidad);
+        if (!prev) return current;
+        if (!prev.lote || !current.lote) return prev;
+        const prevDate = new Date(prev.lote.fecha_caducidad || "9999-12-31");
+        const currentDate = new Date(current.lote.fecha_caducidad || "9999-12-31");
         return currentDate < prevDate ? current : prev;
-      });
+      }, null);
 
       setProductosDetallados((prev) => [
         {
@@ -132,7 +135,7 @@ const VentaForm = ({
         },
         ...prev,
       ]);
-      handleLoteChange(loteMasAntiguo?.lote?.id_lote, lotesFiltrados);
+      handleLoteChange(loteMasAntiguo?.lote?.id_lote || null, lotesFiltrados);
       setCantLote(loteMasAntiguo);
     }
   };
@@ -141,14 +144,16 @@ const VentaForm = ({
     setLote(loteId);
     const lotes = lotesParam || lotesProducto;
     const loteSeleccionado = lotes.find((lote) => {
-      return lote.lote.id_lote === loteId;
+      return (lote.lote?.id_lote || null) === (loteId || null);
     });
 
     setCantLote(loteSeleccionado);
     setVentaData((prev) => ({ ...prev, loteId }));
     setProductosDetallados((prev) =>
       prev.map((producto) =>
-        producto.lotesFiltrados.some((lote) => lote.lote.id_lote === loteId)
+        producto.lotesFiltrados.some(
+          (lote) => (lote.lote?.id_lote || null) === (loteId || null)
+        )
           ? { ...producto, loteSeleccionado }
           : producto
       )
@@ -187,39 +192,52 @@ const VentaForm = ({
     ).values(),
   ];
 
-  const productosUnicosFiltrados = productos.flatMap((producto) => {
-    const mapaProveedores = new Map();
-    producto.inventarios.forEach((inv) => {
-      const prov = inv.lote.detalleCompra.proveedor;
-      mapaProveedores.set(prov.id_proveedor, prov);
-    });
+  const productosUnicosFiltrados = useMemo(
+    () =>
+      (productos || []).flatMap((producto) => {
+        const mapaProveedores = new Map();
+        (producto.inventarios || []).forEach((inv) => {
+          const prov = inv.lote?.detalleCompra?.proveedor || null;
+          const proveedorKey = prov?.id_proveedor || "sin-proveedor";
+          mapaProveedores.set(proveedorKey, prov);
+        });
 
-    const data = Array.from(mapaProveedores.values()).map((proveedor) => {
-      const inventariosDelProveedor = producto.inventarios.filter(
-        (inv) =>
-          inv.lote.detalleCompra.proveedor.id_proveedor ===
-          proveedor.id_proveedor
-      );
-      const loteMasAntiguo = inventariosDelProveedor?.reduce(
-        (prev, current) => {
-          const prevDate = new Date(prev.lote.fecha_caducidad);
-          const currentDate = new Date(current.lote.fecha_caducidad);
-          return currentDate < prevDate ? current : prev;
-        }
-      );
-      return {
-        id_producto: producto.id_producto,
-        nombre: producto.nombre,
-        codigo_barra: producto.codigo_barra,
-        forma_farmaceutica: producto.forma_farmaceutica,
-        concentracion: producto.concentracion,
-        uso_res: producto.uso_res,
-        proveedor,
-        inventarios: inventariosDelProveedor,
-      };
-    });
-    return data;
-  });
+        const data = Array.from(mapaProveedores.values()).map((proveedor) => {
+          const inventariosDelProveedor = (producto.inventarios || []).filter(
+            (inv) => {
+              const proveedorInventario = inv.lote?.detalleCompra?.proveedor || null;
+              return (
+                (proveedorInventario?.id_proveedor || "sin-proveedor") ===
+                (proveedor?.id_proveedor || "sin-proveedor")
+              );
+            }
+          );
+          const loteMasAntiguo = inventariosDelProveedor?.reduce(
+            (prev, current) => {
+              if (!prev?.lote || !current?.lote) return prev;
+              const prevDate = new Date(prev.lote.fecha_caducidad || "9999-12-31");
+              const currentDate = new Date(
+                current.lote.fecha_caducidad || "9999-12-31"
+              );
+              return currentDate < prevDate ? current : prev;
+            }
+          );
+          return {
+            id_producto: producto.id_producto,
+            nombre: producto.nombre,
+            codigo_barra: producto.codigo_barra,
+            forma_farmaceutica: producto.forma_farmaceutica,
+            concentracion: producto.concentracion,
+            uso_res: producto.uso_res,
+            proveedor,
+            precio: producto.precio,
+            inventarios: inventariosDelProveedor,
+          };
+        });
+        return data;
+      }),
+    [productos]
+  );
 
   return (
     <Box sx={{ padding: 2 }}>
@@ -239,9 +257,7 @@ const VentaForm = ({
                       key={lote?.lote?.id_lote}
                       value={lote?.lote?.id_lote}
                     >
-                      {new Date(lote?.lote?.fecha_ingreso).toLocaleDateString(
-                        "es-ES"
-                      )}
+                      {formatLapazDate(lote?.lote?.fecha_ingreso, "date")}
                     </MenuItem>
                   ))}
                 </Select>

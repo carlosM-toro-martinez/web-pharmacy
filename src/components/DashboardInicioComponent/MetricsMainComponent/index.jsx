@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useContext } from "react";
 import { useQuery } from "react-query";
 import topLoteService from "../../../async/services/get/topLoteService";
+import { MainContext } from "../../../context/MainContext";
 import {
   Table,
   TableBody,
@@ -35,7 +36,11 @@ const filterOptions = [
 ];
 
 function MetricsMainComponent() {
-  const { data, isLoading } = useQuery("metrics_lote", topLoteService);
+  const { sucursal } = useContext(MainContext);
+  const { data, isLoading } = useQuery(
+    ["metrics_lote", sucursal?.id_sucursal],
+    () => topLoteService(sucursal?.id_sucursal)
+  );
   const [filter, setFilter] = useState("all");
 
   const today = new Date();
@@ -120,25 +125,16 @@ function MetricsMainComponent() {
           </TableHead>
           <TableBody>
             {filteredData.map((lote) => {
-              const { daysLeft, caducidad, producto } = lote;
+              const { daysLeft, caducidad } = lote;
               const color = getColorByDays(daysLeft);
-
-              // Buscar el inventario correspondiente al lote actual
-              const inventarioDelLote = producto.inventarios.find(
-                (inv) => inv.id_lote === lote.id_lote
-              );
-
-              // Obtener la cantidad o mostrar "0" si no se encuentra
-              const cantidadStock = inventarioDelLote
-                ? inventarioDelLote.cantidad
-                : 0;
+              const cantidadStock = lote.unidades ?? 0;
 
               return (
                 <TableRow key={lote.id_lote}>
                   <TableCell
                     sx={{ textTransform: "capitalize", fontWeight: "bold" }}
                   >
-                    {producto.nombre}
+                    {lote.nombre}
                   </TableCell>
                   <TableCell align="right">{cantidadStock}</TableCell>
                   <TableCell align="center" sx={{ fontWeight: "bold" }}>

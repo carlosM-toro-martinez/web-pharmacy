@@ -25,9 +25,11 @@ import useStyles from "./tableVentas.styles";
 import { useMutation } from "react-query";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import anularVentaAddService from "../../../../async/services/post/anularVentaAddService";
+import { formatLapazDate } from "../../../../utils/dateUtils";
 import { getLocalDateTime } from "../../../../utils/getDate";
 import { useNavigate } from "react-router-dom";
 import { MainContext } from "../../../../context/MainContext";
+import ProductoCellComponent from "../../../ProductoCellComponent";
 
 function TableVentasReport({ reportData, ventaToday, refetchVentas, caja }) {
   const [utilidades, setUtilidades] = useState([]);
@@ -47,7 +49,31 @@ function TableVentasReport({ reportData, ventaToday, refetchVentas, caja }) {
 
       venta.detallesVenta.forEach((detalle) => {
         const lote = detalle.lote;
-        const detalleCompra = lote.detalleCompra;
+        const detalleCompra = lote?.detalleCompra;
+
+        const cantidadVendidaSinCosto =
+          detalle.subCantidad > 0
+            ? detalle.subCantidad
+            : detalle.cantidad > 0
+            ? detalle.cantidad
+            : detalle.peso > 0
+            ? detalle.peso
+            : 0;
+
+        if (!detalleCompra) {
+          // Stock cargado por transferencia o stock inicial sin proveedor/costo:
+          // no hay como calcular el costo, se muestra sin utilidad en vez de crashear.
+          detallesConUtilidad.push({
+            producto: detalle.producto || "Producto desconocido",
+            cantidadVendida: cantidadVendidaSinCosto,
+            precioCompraPorUnidad: "-",
+            precioVentaPorUnidad: parseFloat(
+              detalle.precio_unitario || 0
+            ).toFixed(2),
+            utilidadDetalle: "-",
+          });
+          return;
+        }
 
         let precioCompraPorUnidad;
         if (detalleCompra.subCantidad && detalleCompra.subCantidad > 0) {
@@ -120,12 +146,35 @@ function TableVentasReport({ reportData, ventaToday, refetchVentas, caja }) {
     { contado: 0, qr: 0 }
   );
 
+  const resumenPorTrabajador = Object.values(
+    (reportData || []).reduce((acc, venta) => {
+      const trabajador = venta.trabajadorVenta;
+      const key = venta.id_trabajador || "sin-trabajador";
+      const nombre = trabajador
+        ? `${trabajador.nombre || ""} ${
+            trabajador.apellido_paterno || ""
+          }`.trim() || "Sin nombre"
+        : "Sin trabajador";
+      const total = Number(venta.total) || 0;
+
+      if (!acc[key]) {
+        acc[key] = { nombre, contado: 0, qr: 0 };
+      }
+      if (venta.metodo_pago === "QR") {
+        acc[key].qr += total;
+      } else {
+        acc[key].contado += total;
+      }
+      return acc;
+    }, {})
+  ).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+
   const generatePDF = () => {
     const doc = new jsPDF();
     doc.text("Reporte de Ventas", 80, 10);
     doc.text(` Utilidad Total: ${utilidadGlobal}`, 80, 20);
     const tableData = reportData.map((venta, index) => [
-      new Date(venta.fecha_venta).toLocaleDateString(),
+      formatLapazDate(venta.fecha_venta, "date"),
       `${venta?.cliente?.nombre} ${venta.cliente.apellido}`,
       venta.trabajadorVenta?.nombre,
       venta.metodo_pago,
@@ -220,6 +269,45 @@ function TableVentasReport({ reportData, ventaToday, refetchVentas, caja }) {
             QR: Bs. {resumenMetodos.qr.toFixed(2)}
           </Typography>
         </Box>
+        {resumenPorTrabajador.length > 0 && (
+          <Box sx={{ px: 2, pb: 2 }}>
+            <Typography sx={{ fontWeight: "bold", mb: 1 }}>
+              Por trabajador
+            </Typography>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: "bold" }}>Trabajador</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: "bold" }}>
+                    Contado
+                  </TableCell>
+                  <TableCell align="right" sx={{ fontWeight: "bold" }}>
+                    QR
+                  </TableCell>
+                  <TableCell align="right" sx={{ fontWeight: "bold" }}>
+                    Total
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {resumenPorTrabajador.map((fila) => (
+                  <TableRow key={fila.nombre}>
+                    <TableCell>{fila.nombre}</TableCell>
+                    <TableCell align="right" sx={{ color: "green" }}>
+                      Bs. {fila.contado.toFixed(2)}
+                    </TableCell>
+                    <TableCell align="right" sx={{ color: "primary.main" }}>
+                      Bs. {fila.qr.toFixed(2)}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold" }}>
+                      Bs. {(fila.contado + fila.qr).toFixed(2)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Box>
+        )}
         <Table>
           <TableHead style={{ backgroundColor: "#f5f5f5" }}>
             <TableRow>
@@ -229,6 +317,7 @@ function TableVentasReport({ reportData, ventaToday, refetchVentas, caja }) {
               <TableCell style={{ fontWeight: "bold" }}>Fecha Venta</TableCell>
               <TableCell style={{ fontWeight: "bold" }}>Cliente</TableCell>
               <TableCell style={{ fontWeight: "bold" }}>Trabajador</TableCell>
+              <TableCell style={{ fontWeight: "bold" }}>Sucursal</TableCell>
               <TableCell style={{ fontWeight: "bold" }}>
                 Metodo de pago
               </TableCell>
@@ -379,7 +468,7 @@ function VentaRow({
 
     ventaMutation.mutate(transformVenta);
   };
-  const soloHora = new Date(venta?.fecha_venta).toLocaleTimeString();
+  const soloHora = formatLapazDate(venta?.fecha_venta, "time");
 
   return (
     <>
@@ -395,12 +484,13 @@ function VentaRow({
         </TableCell>
         <TableCell>{index + 1}</TableCell>
         <TableCell>
-          {new Date(venta?.fecha_venta).toLocaleDateString()} {soloHora}
+          {formatLapazDate(venta?.fecha_venta, "date")} {soloHora}
         </TableCell>
         <TableCell>{`${venta?.cliente?.nombre} ${
           venta.cliente.apellido ? venta?.cliente?.apellido : ""
         }`}</TableCell>
         <TableCell>{venta?.trabajadorVenta?.nombre}</TableCell>
+        <TableCell>{venta?.sucursal?.nombre || "-"}</TableCell>
         <TableCell>{venta?.metodo_pago}</TableCell>
 
         <TableCell>{venta.total}</TableCell>
@@ -431,7 +521,7 @@ function VentaRow({
         )}
       </TableRow>
       <TableRow>
-        <TableCell colSpan={7} style={{ paddingBottom: 0, paddingTop: 0 }}>
+        <TableCell colSpan={8} style={{ paddingBottom: 0, paddingTop: 0 }}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <Box className={classes.collapseContainer}>
               <Typography variant="h6" gutterBottom>
@@ -451,7 +541,15 @@ function VentaRow({
                     .filter((detalle) => detalle.subCantidad > 0)
                     .map((detalle, index) => (
                       <TableRow key={index}>
-                        <TableCell>{detalle?.producto?.nombre}</TableCell>
+                        <TableCell>
+                          <ProductoCellComponent
+                            nombre={detalle?.producto?.nombre}
+                            concentracion={detalle?.producto?.concentracion}
+                            forma_farmaceutica={
+                              detalle?.producto?.forma_farmaceutica
+                            }
+                          />
+                        </TableCell>
                         <TableCell>{detalle.subCantidad}</TableCell>
                         <TableCell>{detalle.precio_unitario}</TableCell>
                       </TableRow>

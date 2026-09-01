@@ -13,7 +13,7 @@ import SalesToday from "../SalesToday";
 import ventasTodayService from "../../../async/services/get/ventasTodayService.js";
 
 function CreateVenta({ movimientoInventario }) {
-  const { data, isLoading, error, refetch, openCaja, user } =
+  const { data, isLoading, error, refetch, openCaja, user, sucursal } =
     useContext(MainContext);
 
   const {
@@ -22,9 +22,12 @@ function CreateVenta({ movimientoInventario }) {
     isError: isErrorVentas,
     refetch: refetchVentas,
   } = useQuery("ventasToday", ventasTodayService);
+  const idSucursal =
+    sucursal?.id_sucursal || user?.id_sucursal || data?.caja?.id_sucursal || null;
   const { data: productos, isLoading: isLoadingProductos } = useQuery(
-    "products",
-    productosService
+    ["products", idSucursal],
+    () => productosService(idSucursal),
+    { enabled: Boolean(idSucursal) }
   );
   const navigate = useNavigate();
   useEffect(() => {
@@ -41,7 +44,11 @@ function CreateVenta({ movimientoInventario }) {
     isLoading: isLoadingProducts,
     error: errorProducts,
     refetch: refetchProducts,
-  } = useQuery(`products-inventario`, inventarioService);
+  } = useQuery(
+    ["products-inventario", idSucursal],
+    () => inventarioService(idSucursal),
+    { enabled: Boolean(idSucursal) }
+  );
 
   const {
     data: clientsData,

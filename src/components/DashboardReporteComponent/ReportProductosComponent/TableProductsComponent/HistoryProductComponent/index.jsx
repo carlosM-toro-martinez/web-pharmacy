@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Box,
   Typography,
@@ -11,11 +11,36 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 function HistoryProductComponent({ history, producto }) {
-  const { historial } = history;
+  const { historial, stock } = history;
 
   const formatDate = (dateString) => {
     return format(new Date(dateString), "PPpp", { locale: es });
   };
+
+  // El stock actual es el único saldo real que tenemos; para mostrar
+  // "cantidad antes/después" por movimiento se reconstruye el saldo hacia
+  // atrás en el tiempo (compra suma, venta y salida sin venta restan).
+  // Nota: no incluye transferencias entre sucursales, así que el saldo
+  // reconstruido puede no cuadrar si el producto se transfirió alguna vez.
+  const historialConSaldo = useMemo(() => {
+    let saldo = Number(stock?.subCantidad) || 0;
+    const resultado = new Array(historial.length);
+    for (let i = historial.length - 1; i >= 0; i--) {
+      const item = historial[i];
+      const movimiento = Number(item.detalle?.subCantidad) || 0;
+      const esIngreso = item.tipo === "compra";
+      const despues = saldo;
+      const antes = esIngreso ? despues - movimiento : despues + movimiento;
+      resultado[i] = {
+        ...item,
+        cantidadAntes: antes,
+        cantidadDespues: despues,
+        cantidadMovimiento: movimiento,
+      };
+      saldo = antes;
+    }
+    return resultado;
+  }, [historial, stock]);
 
   return (
     <Box sx={{ width: "100%", mt: 2 }}>
@@ -32,15 +57,19 @@ function HistoryProductComponent({ history, producto }) {
           .filter(Boolean)
           .join(" ")}
 
-        {producto?.subCantidad !== null && (
+        {stock?.subCantidad > 0 ? (
           <Box component="span" sx={{ color: "green", ml: 1 }}>
-            <strong>{`${producto.subCantidad} unidades actualmente en almacen`}</strong>
+            <strong>{`${stock.subCantidad} unidades actualmente en almacen`}</strong>
+          </Box>
+        ) : (
+          <Box component="span" sx={{ color: "text.secondary", ml: 1 }}>
+            <strong>Aún no hay stock para este producto</strong>
           </Box>
         )}
       </Typography>
 
       <Grid container spacing={2}>
-        {historial
+        {historialConSaldo
           .filter((item) => item.detalle?.subCantidad > 0)
           .map((item, index) => {
             let color = "";
@@ -56,6 +85,8 @@ function HistoryProductComponent({ history, producto }) {
               color = "#1976d2";
               title = item.tipo_movimiento?.toUpperCase() || "MOVIMIENTO";
             }
+
+            const peso = Number(item.detalle?.peso) || 0;
 
             return (
               <Grid item xs={12} key={index}>
@@ -105,12 +136,21 @@ function HistoryProductComponent({ history, producto }) {
                     <Divider sx={{ my: 1 }} />
 
                     <Typography variant="body2">
-                      <strong>Cantidad:</strong> {item.detalle?.subCantidad}
+                      <strong>Cantidad antes:</strong> {item.cantidadAntes}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>
+                        {item.tipo === "compra" ? "Cantidad de entrada:" : "Cantidad de salida:"}
+                      </strong>{" "}
+                      {item.cantidadMovimiento}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Cantidad después:</strong> {item.cantidadDespues}
                     </Typography>
 
-                    {item.detalle?.peso !== null && (
+                    {peso > 0 && (
                       <Typography variant="body2">
-                        <strong>Peso:</strong> {item.detalle.peso}
+                        <strong>Peso:</strong> {peso}
                       </Typography>
                     )}
                   </CardContent>

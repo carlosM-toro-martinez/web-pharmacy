@@ -9,14 +9,21 @@ import { Navigate, Outlet } from "react-router-dom";
 import DashboardSalidaComponent from "../../../components/DashboardSalidaComponent/index.jsx";
 
 function CreateMovementInventario() {
-  const { data, isLoading, error, refetch, openCaja } = useContext(MainContext);
+  const { data, isLoading, error, refetch, openCaja, user, sucursal } =
+    useContext(MainContext);
+  const idSucursal =
+    sucursal?.id_sucursal || user?.id_sucursal || data?.caja?.id_sucursal || null;
 
   const {
     data: productsData,
     isLoading: isLoadingProducts,
     error: errorProducts,
     refetch: refetchProducts,
-  } = useQuery(`products-inventario`, inventarioService);
+  } = useQuery(
+    ["products-inventario", idSucursal],
+    () => inventarioService(idSucursal),
+    { enabled: Boolean(idSucursal) }
+  );
 
   const {
     data: clientsData,

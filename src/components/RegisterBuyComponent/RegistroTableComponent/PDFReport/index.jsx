@@ -1,6 +1,7 @@
 // PDFReport.js
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import { formatLapazDate } from "../../../../utils/dateUtils";
 
 const styles = StyleSheet.create({
   page: {
@@ -49,7 +50,7 @@ const PDFReport = ({ buyLote, sumaTotal }) => (
           {buyLote.map((registro, index) => (
             <View style={styles.row} key={index}>
               <Text style={styles.cell}>
-                {new Date(registro?.fecha_caducidad).toLocaleDateString()}
+                {formatLapazDate(registro?.fecha_caducidad, "date")}
               </Text>
               <Text style={styles.cell}>{registro?.cantidad}</Text>
               <Text style={styles.cell}>{registro?.producto?.nombre}</Text>

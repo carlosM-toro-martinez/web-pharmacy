@@ -6,6 +6,7 @@ import proveedor from "../../assets/images/icons/proveedor.png";
 import clientes from "../../assets/images/icons/clientes.png";
 import producto from "../../assets/images/icons/producto.png";
 import trabajadores from "../../assets/images/icons/trabajadores.png";
+import transferencia from "../../assets/images/icons/almacen.png";
 import useStyles from "./dasboardReporte.styles";
 import { Box, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
@@ -48,6 +49,21 @@ function DasboardReporteComponent() {
       image: trabajadores,
       title: "Trabajadores",
       path: "trabajadores",
+    },
+    {
+      image: transferencia,
+      title: "Transferencias",
+      path: "transferencias",
+    },
+    {
+      image: transferencia,
+      title: "Movimientos",
+      path: "movimientos",
+    },
+    {
+      image: trabajadores,
+      title: "Inicios de Sesión",
+      path: "logins",
     },
   ];
   const navigate = useNavigate();

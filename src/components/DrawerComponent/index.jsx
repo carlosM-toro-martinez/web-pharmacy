@@ -8,7 +8,8 @@ import StoreIcon from "@mui/icons-material/Store";
 import PersonIcon from "@mui/icons-material/Person";
 import GroupIcon from "@mui/icons-material/Group";
 import RotateLeftIcon from "@mui/icons-material/RotateLeft";
-import SettingsIcon from "@mui/icons-material/Settings";
+import SendIcon from "@mui/icons-material/Send";
+import Inventory2Icon from "@mui/icons-material/Inventory2";
 import { Link, useLocation } from "react-router-dom";
 import useStyles from "./drawer.styles";
 import { MainContext } from "../../context/MainContext";
@@ -37,7 +38,16 @@ export default function DrawerComponent({ children }) {
       name: "Movimientos",
       icon: <RotateLeftIcon />,
     },
-    { path: "/ajustes", name: "Ajustes", icon: <SettingsIcon /> },
+    {
+      path: "/transferencias",
+      name: "Transferencias",
+      icon: <SendIcon />,
+    },
+    {
+      path: "/stock-inicial",
+      name: "Stock inicial",
+      icon: <Inventory2Icon />,
+    },
   ];
 
   const userPermissions =
@@ -45,8 +55,13 @@ export default function DrawerComponent({ children }) {
   const isAdministrator = user?.rol?.nombre?.toLowerCase() === "administrador";
 
   const visibleRoutes = routes.filter((route) => {
-    if (route.path !== "/ajustes") return true;
-    return superAdmin || isAdministrator || userPermissions.includes("ajustes");
+    if (
+      route.path === "/transferencias" ||
+      route.path === "/stock-inicial"
+    ) {
+      return superAdmin || isAdministrator || userPermissions.includes("ajustes") || userPermissions.includes("inventario");
+    }
+    return true;
   });
 
   return (

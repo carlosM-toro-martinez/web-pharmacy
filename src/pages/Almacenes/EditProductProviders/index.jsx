@@ -5,6 +5,7 @@ import productosService from "../../../async/services/get/productosService";
 import proveedoresService from "../../../async/services/get/proveedoresService";
 import loteService from "../../../async/services/get/loteService";
 import RegisterBuyComponent from "../../../components/RegisterBuyComponent";
+import { formatLapazDate } from "../../../utils/dateUtils";
 import {
   Box,
   Typography,
@@ -48,7 +49,7 @@ function EditProductProviders() {
     isLoading: isLoadingProducts,
     error: errorProducts,
     refetch: refetchProducts,
-  } = useQuery(`products`, productosService);
+  } = useQuery(`products`, () => productosService());
 
   return (
     <>
@@ -87,11 +88,11 @@ function EditProductProviders() {
                       <Typography>Lote: {lote.numero_lote}</Typography>
                       <Typography variant="body2" color="text.secondary">
                         Ingreso:{" "}
-                        {new Date(lote.fecha_ingreso).toLocaleDateString()}
+                        {formatLapazDate(lote.fecha_ingreso, "date")}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Vence:{" "}
-                        {new Date(lote.fecha_caducidad).toLocaleDateString()}
+                        {formatLapazDate(lote.fecha_caducidad, "date")}
                       </Typography>
                     </Grid>
 

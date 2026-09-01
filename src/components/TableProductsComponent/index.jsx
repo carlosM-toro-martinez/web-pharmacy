@@ -28,6 +28,8 @@ import { Button } from "@mui/material";
 import ProductoModalComponent from "../RegisterBuyComponent/ProductoModalComponent";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import { useContext } from "react";
+import { MainContext } from "../../context/MainContext";
 
 const ITEM_HEIGHT = 48;
 
@@ -37,6 +39,7 @@ export default function TableProductsComponent({
   proveedoresData,
 }) {
   const classes = useStyles();
+  const { sucursal } = useContext(MainContext);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [searchQuery, setSearchQuery] = useState("");
@@ -131,7 +134,7 @@ export default function TableProductsComponent({
   });
 
   const { mutate } = useMutation(
-    ({ id, updatedPrice, updatedSalePrice, idLote, idProveedor }) =>
+    ({ id, idProducto, updatedPrice, updatedSalePrice, idLote, idProveedor }) =>
       detalleCompraUpdateServices(id, {
         ...(updatedPrice !== undefined && { precio_unitario: updatedPrice }),
         ...(updatedSalePrice !== undefined && {
@@ -139,6 +142,7 @@ export default function TableProductsComponent({
         }),
         ...(idLote && { id_lote: idLote }),
         ...(idProveedor && { id_proveedor: idProveedor }),
+        ...(idProducto && { id_producto: idProducto }),
       }),
     {
       onSuccess: () => {
@@ -379,6 +383,7 @@ export default function TableProductsComponent({
           mutate={mutate}
           mutateDelete={mutateDelete}
           proveedoresData={proveedoresData}
+          idSucursal={sucursal?.id_sucursal}
         />
       )}
     </Box>

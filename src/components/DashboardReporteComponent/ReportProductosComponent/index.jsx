@@ -2,12 +2,14 @@ import React, { useState } from "react";
 import DrawerComponent from "../../DrawerComponent";
 import { useQuery } from "react-query";
 import { Box, Button, ButtonGroup, Typography } from "@mui/material";
-import productosService from "../../../async/services/get/productosService";
+import productosSimpleService from "../../../async/services/get/productosSimpleService";
 import TableProductsComponent from "./TableProductsComponent";
 import MostSoldProductsComponent from "./MostSoldProductsComponent";
 
 function ReportProductosComponent() {
-  const { data, isLoading } = useQuery(`sectionsProducts`, productosService);
+  const { data, isLoading } = useQuery(`sectionsProducts-simple`, () =>
+    productosSimpleService({ limit: 3000 })
+  );
 
   const [selectedView, setSelectedView] = useState("historial"); // o "masVendidos"
 

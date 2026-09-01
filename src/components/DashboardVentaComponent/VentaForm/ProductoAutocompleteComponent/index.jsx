@@ -93,9 +93,12 @@ const ProductoAutocompleteComponent = ({
           filterOptions={(options, { inputValue }) => {
             setSearch(inputValue);
 
-            const searchWords = inputValue.toLowerCase().trim().split(/\s+/);
+            const query = inputValue.toLowerCase().trim();
+            const searchWords = query.split(/\s+/).filter(Boolean);
+            if (!searchWords.length) return options;
 
-            return options.filter((option) => {
+            const puntuar = (option) => {
+              const nombre = (option?.nombre || "").toLowerCase();
               const combined = [
                 option?.nombre,
                 option?.proveedor?.nombre,
@@ -107,8 +110,28 @@ const ProductoAutocompleteComponent = ({
                 .join(" ")
                 .toLowerCase();
 
-              return searchWords.every((word) => combined.includes(word));
-            });
+              if (!searchWords.every((word) => combined.includes(word))) {
+                return null;
+              }
+              // Prioriza coincidencias al inicio del nombre (ej. "pa" -> "PARACETAMOL")
+              // por encima de coincidencias en medio de otra palabra.
+              if (nombre.startsWith(query)) return 0;
+              if (nombre.split(/\s+/).some((palabra) => palabra.startsWith(query))) {
+                return 1;
+              }
+              if (nombre.includes(query)) return 2;
+              return 3;
+            };
+
+            return options
+              .map((option) => ({ option, puntaje: puntuar(option) }))
+              .filter(({ puntaje }) => puntaje !== null)
+              .sort((a, b) =>
+                a.puntaje !== b.puntaje
+                  ? a.puntaje - b.puntaje
+                  : (a.option?.nombre || "").localeCompare(b.option?.nombre || "")
+              )
+              .map(({ option }) => option);
           }}
           renderOption={(props, option) => {
             const nombre = option.nombre || "";
@@ -117,7 +140,8 @@ const ProductoAutocompleteComponent = ({
             const forma = option?.forma_farmaceutica || "";
             const conc = option?.concentracion || "";
             const cod = option?.codigo_barra || "";
-            const precio = option?.inventarios[0]?.lote?.precioVenta || "";
+            const precio =
+              option?.inventarios?.[0]?.lote?.precioVenta || option?.precio || "";
 
             return (
               <Box

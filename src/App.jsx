@@ -7,6 +7,8 @@ import Almacenes from "./pages/Almacenes";
 import Perfil from "./pages/Perfil";
 import Trabajadores from "./pages/Trabajadores";
 import Clientes from "./pages/Clientes";
+import Transferencias from "./pages/Transferencias";
+import StockInicial from "./pages/StockInicial";
 import { QueryClient, QueryClientProvider } from "react-query";
 import CreateAlmacenes from "./pages/Almacenes/CreateAlmacenes";
 import MainContextProvider from "./context/MainContextProvider";
@@ -28,6 +30,9 @@ import ReportProductosComponent from "./components/DashboardReporteComponent/Rep
 import EditProductProviders from "./pages/Almacenes/EditProductProviders";
 import ReportWorkersComponent from "./components/DashboardReporteComponent/ReportWorkersComponent";
 import Ajustes from "./pages/Ajustes";
+import TransferenciasReporte from "./pages/Reportes/Transferencias";
+import MovimientosReporte from "./pages/Reportes/Movimientos";
+import LoginsReporte from "./pages/Reportes/Logins";
 
 function App() {
   const queryClient = new QueryClient();
@@ -43,6 +48,11 @@ function App() {
               >
                 <Route path="/reportes">
                   <Route path="" element={<Reportes />} />
+                  <Route
+                    path="movimientos"
+                    element={<MovimientosReporte />}
+                  />
+                  <Route path="logins" element={<LoginsReporte />} />
                   <Route
                     path="almacen"
                     element={<ReportAlmacenesComponent />}
@@ -71,6 +81,13 @@ function App() {
                 }
               >
                 <Route path="/almacenes/crear" element={<CreateAlmacenes />} />
+              </Route>
+
+              <Route element={<ProtectedRoute allowedPermissions={[]} />}>
+                <Route
+                  path="/reportes/transferencias"
+                  element={<TransferenciasReporte />}
+                />
               </Route>
               {/* <Route
                 element={
@@ -121,6 +138,8 @@ function App() {
                 element={<ProtectedRoute allowedPermissions={["ajustes"]} />}
               >
                 <Route path="/ajustes" element={<Ajustes />} />
+                <Route path="/transferencias" element={<Transferencias />} />
+                <Route path="/stock-inicial" element={<StockInicial />} />
               </Route>
               <Route
                 element={

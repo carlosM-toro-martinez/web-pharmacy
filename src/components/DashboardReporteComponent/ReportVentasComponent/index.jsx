@@ -1,167 +1,185 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useQuery } from "react-query";
 import {
-  MenuItem,
-  Select,
-  Button,
-  FormControl,
-  InputLabel,
-  Typography,
-  CircularProgress,
+  Alert,
   Box,
+  Button,
+  ButtonGroup,
+  CircularProgress,
+  MenuItem,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
 } from "@mui/material";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import DrawerComponent from "../../DrawerComponent";
-import ventasService from "../../../async/services/get/ventasService.js";
+import sucursalesService from "../../../async/services/get/sucursalesService";
 import reportVentasService from "../../../async/services/get/reportVentasService.js";
 import TableVentasReport from "./TableVentasReport";
-import VentasResumeTable from "./VentasResumeTable"; // Asegúrate de tenerlo creado
+import VentasResumeTable from "./VentasResumeTable";
+
+const haceNDias = (n) => {
+  const fecha = new Date();
+  fecha.setDate(fecha.getDate() - n);
+  return fecha.toISOString().slice(0, 10);
+};
+
+const primerDiaDelMes = () => {
+  const fecha = new Date();
+  fecha.setDate(1);
+  return fecha.toISOString().slice(0, 10);
+};
+
+const hoy = () => new Date().toISOString().slice(0, 10);
+
+const initialFilters = {
+  desde: haceNDias(7),
+  hasta: hoy(),
+  id_sucursal: "",
+};
 
 function ReportVentasComponent() {
-  const [idInicio, setIdInicio] = useState(null);
-  const [idFinal, setIdFinal] = useState(null);
-  const [fechasAgrupadas, setFechasAgrupadas] = useState([]);
-  const [modoResumen, setModoResumen] = useState("ventas"); // "ventas" o "productos"
+  const [filters, setFilters] = useState(initialFilters);
+  const [appliedFilters, setAppliedFilters] = useState(initialFilters);
+  const [modoResumen, setModoResumen] = useState("ventas");
 
-  const { data: ventas, isLoading: isLoadingVentas } = useQuery(
-    "ventas",
-    ventasService
-  );
-
+  const { data: sucursales = [] } = useQuery("sucursales", sucursalesService);
   const {
-    data: reportData,
-    refetch: fetchReport,
+    data: reportData = [],
     isLoading: isLoadingReport,
     error: reportError,
-  } = useQuery(
-    ["reporteVentas", idInicio, idFinal],
-    () => reportVentasService(idInicio, idFinal),
-    {
-      enabled: false,
-    }
+  } = useQuery(["reporte-ventas", appliedFilters], () =>
+    reportVentasService(appliedFilters)
   );
 
-  const handleInicioChange = (event) => setIdInicio(event.target.value);
-  const handleFinalChange = (event) => setIdFinal(event.target.value);
-  const handleGenerateReport = () => {
-    if (idInicio && idFinal) fetchReport();
+  const handleChange = (event) => {
+    setFilters((previous) => ({
+      ...previous,
+      [event.target.name]: event.target.value,
+    }));
   };
 
-  useEffect(() => {
-    if (ventas) {
-      const agrupadosPorFecha = ventas.reduce((acc, venta) => {
-        const fechaVenta = new Date(venta.fecha_venta).toLocaleDateString();
-        if (!acc[fechaVenta]) {
-          acc[fechaVenta] = {
-            fecha: fechaVenta,
-            primerosId: venta.id_venta,
-            ultimosId: venta.id_venta,
-          };
-        } else {
-          acc[fechaVenta].ultimosId = venta.id_venta;
-        }
-        return acc;
-      }, {});
-      setFechasAgrupadas(Object.values(agrupadosPorFecha));
-    }
-  }, [ventas]);
+  const handleSearch = (event) => {
+    event.preventDefault();
+    setAppliedFilters(filters);
+  };
+
+  const aplicarPreset = (nuevosFiltros) => {
+    const combinado = { ...filters, ...nuevosFiltros };
+    setFilters(combinado);
+    setAppliedFilters(combinado);
+  };
 
   return (
     <DrawerComponent>
-      {!isLoadingVentas ? (
-        <Box>
-          <Typography
-            component="h2"
-            sx={{
-              textAlign: "center",
-              fontSize: "2rem",
-              fontWeight: "bold",
-              mt: 2,
-            }}
+      <Box sx={{ p: { xs: 1, md: 3 } }}>
+        <Typography variant="h4" sx={{ mb: 1, fontWeight: 700 }}>
+          Reporte de ventas
+        </Typography>
+        <Typography color="text.secondary" sx={{ mb: 3 }}>
+          Ventas registradas, de la más reciente a la más antigua.
+        </Typography>
+
+        <Paper component="form" onSubmit={handleSearch} sx={{ p: 2, mb: 3 }}>
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            spacing={2}
+            alignItems={{ md: "flex-end" }}
+            flexWrap="wrap"
+            useFlexGap
           >
-            Reporte de ventas
-          </Typography>
-
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              gap: "2rem",
-              alignItems: "center",
-              mt: 4,
-              flexWrap: "wrap",
-            }}
-          >
-            <FormControl sx={{ width: "15rem" }}>
-              <InputLabel id="select-inicio-label">Fecha de Inicio</InputLabel>
-              <Select
-                label="Fecha de Inicio"
-                labelId="select-inicio-label"
-                value={idInicio}
-                onChange={handleInicioChange}
-              >
-                {fechasAgrupadas?.map((fecha) => (
-                  <MenuItem key={fecha.fecha} value={fecha.primerosId}>
-                    {fecha.fecha}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl sx={{ width: "15rem" }}>
-              <InputLabel id="select-final-label">Fecha Final</InputLabel>
-              <Select
-                label="Fecha Final"
-                labelId="select-final-label"
-                value={idFinal}
-                onChange={handleFinalChange}
-              >
-                {fechasAgrupadas?.map((fecha) => (
-                  <MenuItem key={fecha.fecha} value={fecha.ultimosId}>
-                    {fecha.fecha}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl sx={{ width: "15rem" }}>
-              <InputLabel id="modo-resumen-label">Modo Resumen</InputLabel>
-              <Select
-                label="Modo Resumen"
-                labelId="modo-resumen-label"
-                value={modoResumen}
-                onChange={(e) => setModoResumen(e.target.value)}
-              >
-                <MenuItem value="ventas">Ver resumen por Ventas</MenuItem>
-                <MenuItem value="productos">Ver resumen por Producto</MenuItem>
-              </Select>
-            </FormControl>
-
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleGenerateReport}
-              disabled={!idInicio || !idFinal}
+            <TextField
+              name="desde"
+              label="Desde"
+              type="date"
+              value={filters.desde}
+              onChange={handleChange}
+              InputLabelProps={{ shrink: true }}
+              size="small"
+            />
+            <TextField
+              name="hasta"
+              label="Hasta"
+              type="date"
+              value={filters.hasta}
+              onChange={handleChange}
+              InputLabelProps={{ shrink: true }}
+              size="small"
+            />
+            <TextField
+              select
+              name="id_sucursal"
+              label="Sucursal"
+              value={filters.id_sucursal}
+              onChange={handleChange}
+              size="small"
+              sx={{ minWidth: 190 }}
             >
-              Generar Reporte
+              <MenuItem value="">Todas</MenuItem>
+              {sucursales.map((sucursal) => (
+                <MenuItem key={sucursal.id_sucursal} value={sucursal.id_sucursal}>
+                  {sucursal.nombre}
+                </MenuItem>
+              ))}
+            </TextField>
+            <Button type="submit" variant="contained" startIcon={<RefreshIcon />}>
+              Buscar
             </Button>
-          </Box>
+            <Button
+              type="button"
+              onClick={() => aplicarPreset({ desde: hoy(), hasta: hoy() })}
+            >
+              Hoy
+            </Button>
+            <Button
+              type="button"
+              onClick={() =>
+                aplicarPreset({ desde: haceNDias(7), hasta: hoy() })
+              }
+            >
+              Última semana
+            </Button>
+            <Button
+              type="button"
+              onClick={() =>
+                aplicarPreset({ desde: primerDiaDelMes(), hasta: hoy() })
+              }
+            >
+              Este mes
+            </Button>
+          </Stack>
+        </Paper>
 
-          {isLoadingReport ? (
-            <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-              <CircularProgress />
-            </Box>
-          ) : (
-            reportData &&
-            (modoResumen === "ventas" ? (
-              <TableVentasReport reportData={reportData} />
-            ) : (
-              <VentasResumeTable data={reportData} />
-            ))
-          )}
+        <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+          <ButtonGroup variant="outlined" color="primary">
+            <Button
+              onClick={() => setModoResumen("ventas")}
+              variant={modoResumen === "ventas" ? "contained" : "outlined"}
+            >
+              Ver resumen por ventas
+            </Button>
+            <Button
+              onClick={() => setModoResumen("productos")}
+              variant={modoResumen === "productos" ? "contained" : "outlined"}
+            >
+              Ver resumen por producto
+            </Button>
+          </ButtonGroup>
         </Box>
-      ) : (
-        <Box>Cargando ventas...</Box>
-      )}
+
+        {reportError ? (
+          <Alert severity="error">No se pudo cargar el reporte.</Alert>
+        ) : isLoadingReport ? (
+          <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+            <CircularProgress />
+          </Box>
+        ) : modoResumen === "ventas" ? (
+          <TableVentasReport reportData={reportData} />
+        ) : (
+          <VentasResumeTable data={reportData} />
+        )}
+      </Box>
     </DrawerComponent>
   );
 }

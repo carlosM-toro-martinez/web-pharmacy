@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { Button, Grid, Box, Snackbar, TextField } from "@mui/material";
+import { Button, Grid, Box, Snackbar, TextField, Autocomplete } from "@mui/material";
 import Alert from "@mui/material/Alert";
 import LoteFormComponent from "./LoteFormComponent";
 import ProductoProveedorForm from "./ProductoProveedorForm";
@@ -15,6 +15,11 @@ import { getLocalDateTime } from "../../utils/getDate";
 import { MainContext } from "../../context/MainContext";
 import { Typography } from "@mui/material";
 import buyAddService from "../../async/services/post/buyAddService";
+import {
+  loadAlmacenesDraft,
+  saveAlmacenesDraft,
+  clearAlmacenesDraft,
+} from "../../utils/almacenesDraftStorage";
 
 const RegisterBuyComponent = ({
   products,
@@ -25,27 +30,86 @@ const RegisterBuyComponent = ({
   refetchLote,
 }) => {
   const classes = useStyles();
-  const { user } = useContext(MainContext);
+  const { user, sucursal } = useContext(MainContext);
+  const idSucursal = sucursal?.id_sucursal || user?.id_sucursal || null;
 
-  const [lote, setLote] = useState("");
-  const [loteNumber, setLoteNumber] = useState("");
-  const [fechaIngreso, setFechaIngreso] = useState("");
-  const [fechaCaducidad, setFechaCaducidad] = useState("");
-  const [proveedor, setProveedor] = useState("");
-  const [producto, setProducto] = useState("");
-  const [productoName, setProductoName] = useState("");
-  const [proveedorName, setProveedorName] = useState("");
-  const [cantidad, setCantidad] = useState(null);
-  const [precio, setPrecio] = useState(null);
-  const [peso, setPeso] = useState(null);
-  const [subCantidad, setSubCantidad] = useState(null);
-  const [registroCombinado, setRegistroCombinado] = useState([]);
+  const draft = loadAlmacenesDraft();
+
+  const [lote, setLote] = useState(draft?.lote ?? "");
+  const [loteNumber, setLoteNumber] = useState(draft?.loteNumber ?? "");
+  const [fechaIngreso, setFechaIngreso] = useState(draft?.fechaIngreso ?? "");
+  const [fechaCaducidad, setFechaCaducidad] = useState(
+    draft?.fechaCaducidad ?? ""
+  );
+  const [proveedor, setProveedor] = useState(draft?.proveedor ?? "");
+  const [producto, setProducto] = useState(draft?.producto ?? "");
+  const [productoName, setProductoName] = useState(draft?.productoName ?? "");
+  const [proveedorName, setProveedorName] = useState(
+    draft?.proveedorName ?? ""
+  );
+  const [cantidad, setCantidad] = useState(draft?.cantidad ?? null);
+  const [precio, setPrecio] = useState(draft?.precio ?? null);
+  const [peso, setPeso] = useState(draft?.peso ?? null);
+  const [subCantidad, setSubCantidad] = useState(draft?.subCantidad ?? null);
+  const [registroCombinado, setRegistroCombinado] = useState(
+    draft?.registroCombinado ?? []
+  );
   const [detalleCompraId, setDetalleCompraId] = useState(null);
   const [error, setError] = useState();
-  const [isLoteProveedorLocked, setIsLoteProveedorLocked] = useState(false);
-  const [precioVenta, setPrecioVenta] = useState(null);
+  const [isLoteProveedorLocked, setIsLoteProveedorLocked] = useState(
+    draft?.isLoteProveedorLocked ?? false
+  );
+  const [precioVenta, setPrecioVenta] = useState(draft?.precioVenta ?? null);
   const [loadingBuy, setLoadingBuy] = useState(false);
-  
+  // Distribuidora + N° de factura: son de la COMPRA completa (la factura),
+  // no de la linea/marca de cada producto (eso ya lo cubre "proveedor").
+  const [proveedorFactura, setProveedorFactura] = useState(
+    draft?.proveedorFactura ?? ""
+  );
+  const [numeroFactura, setNumeroFactura] = useState(
+    draft?.numeroFactura ?? ""
+  );
+
+  useEffect(() => {
+    saveAlmacenesDraft({
+      lote,
+      loteNumber,
+      fechaIngreso,
+      fechaCaducidad,
+      proveedor,
+      producto,
+      productoName,
+      proveedorName,
+      cantidad,
+      precio,
+      peso,
+      subCantidad,
+      registroCombinado,
+      isLoteProveedorLocked,
+      precioVenta,
+      proveedorFactura,
+      numeroFactura,
+    });
+  }, [
+    lote,
+    loteNumber,
+    fechaIngreso,
+    fechaCaducidad,
+    proveedor,
+    producto,
+    productoName,
+    proveedorName,
+    cantidad,
+    precio,
+    peso,
+    subCantidad,
+    registroCombinado,
+    isLoteProveedorLocked,
+    precioVenta,
+    proveedorFactura,
+    numeroFactura,
+  ]);
+
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -67,8 +131,13 @@ const RegisterBuyComponent = ({
 
   const handleSave = () => {
     setLoteNumber(lote);
+    const productoInfo = (products || []).find(
+      (p) => p.id_producto === producto
+    );
     const newBuy = {
       producto: productoName,
+      concentracion: productoInfo?.concentracion || "",
+      forma_farmaceutica: productoInfo?.forma_farmaceutica || "",
       proveedor: proveedorName,
       id_proveedor: proveedor,
       id_producto: producto,
@@ -110,7 +179,9 @@ const RegisterBuyComponent = ({
       setLote("");
       setRegistroCombinado([]);
       setLoadingBuy(false);
-
+      setProveedorFactura("");
+      setNumeroFactura("");
+      clearAlmacenesDraft();
     },
     onError: (error) => {
       setLoadingBuy(false);
@@ -152,6 +223,8 @@ const RegisterBuyComponent = ({
         fecha_compra: item.fecha_compra,
         fecha_caducidad: item.fecha_caducidad,
         id_trabajador: item?.id_trabajador,
+        id_proveedor_factura: proveedorFactura || null,
+        numero_factura: numeroFactura || null,
       },
       loteData: {
         id_proveedor: item.id_proveedor,
@@ -178,6 +251,7 @@ const RegisterBuyComponent = ({
         subCantidad: item.subCantidad,
         cantidadPorCaja: item.cantidadPorCaja,
         id_trabajador: item.id_trabajador,
+        id_sucursal: idSucursal,
       },
     }));
 
@@ -217,6 +291,60 @@ const RegisterBuyComponent = ({
                 fontSize: "1.5rem",
                 fontWeight: "bold",
                 margin: "2rem 0 .5rem 0",
+              }}
+            >
+              Datos de la factura
+            </Typography>
+            <Box
+              sx={{
+                display: "flex",
+                gap: 2,
+                flexWrap: "wrap",
+                justifyContent: "center",
+                mb: 2,
+              }}
+            >
+              <Autocomplete
+                size="small"
+                sx={{ minWidth: 220 }}
+                options={proveedores || []}
+                getOptionLabel={(option) => option?.nombre?.toUpperCase() || ""}
+                isOptionEqualToValue={(option, value) =>
+                  option.id_proveedor === value.id_proveedor
+                }
+                value={
+                  (proveedores || []).find(
+                    (p) => p.id_proveedor === proveedorFactura
+                  ) || null
+                }
+                onChange={(event, newValue) =>
+                  setProveedorFactura(newValue?.id_proveedor || "")
+                }
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Distribuidora"
+                    helperText="Quien emitió la factura de esta compra"
+                  />
+                )}
+              />
+              <TextField
+                label="N° de factura"
+                size="small"
+                value={numeroFactura}
+                onChange={(e) => setNumeroFactura(e.target.value)}
+                placeholder="Si lo dejas vacío se genera uno automático"
+                sx={{ minWidth: 220 }}
+                helperText="Opcional, si lo dejas vacío se genera uno automático"
+              />
+            </Box>
+            <Typography
+              variant="h3"
+              className={classes.header}
+              style={{
+                fontSize: "1.5rem",
+                fontWeight: "bold",
+                margin: "1rem 0 .5rem 0",
               }}
             >
               Registro de Lote

@@ -21,6 +21,7 @@ function FormTrabajador({
   rol,
   refetchRol,
   sucursales = [],
+  isEdit = false,
 }) {
   const [showPassword, setShowPassword] = useState(false);
   const [openModal, setOpenModal] = useState(false);
@@ -109,7 +110,8 @@ function FormTrabajador({
             value={formData.password}
             onChange={handleChange}
             fullWidth
-            required
+            required={!isEdit}
+            helperText={isEdit ? "Dejar en blanco para no cambiarla" : ""}
             className={classes.input}
             InputProps={{
               endAdornment: (

@@ -71,7 +71,7 @@ function LoginComponent() {
     onError: (error) => {
       setSnackbar({
         open: true,
-        message: `Error al iniciar sesión: ${error}`,
+        message: `Error al iniciar sesión: ${error?.message || error}`,
         severity: "error",
       });
     },

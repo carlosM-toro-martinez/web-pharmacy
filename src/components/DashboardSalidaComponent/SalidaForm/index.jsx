@@ -12,6 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import { formatLapazDate } from "../../../utils/dateUtils";
 
 const SalidaForm = ({
   ventaData,
@@ -53,20 +54,20 @@ const SalidaForm = ({
   }, [clientes]);
 
   const handleProductoChange = (productoId, newValue) => {
-    setMetodosVenta(newValue?.inventarios[0].lote?.producto?.metodosVenta);
+    setMetodosVenta(newValue?.inventarios?.[0]?.lote?.producto?.metodosVenta);
 
     setProducto(productoId);
 
     const lotesFiltrados =
-      productos
-        .find((producto) => producto.id_producto === productoId)
-        ?.inventarios.filter(
-          (inv) =>
-            Number(inv.cantidad) > 0 ||
-            Number(inv.subCantidad) > 0 ||
-            Number(inv.peso) > 0
-        )
-        .map((inv) => inv) || [];
+      (
+        productos.find((producto) => producto.id_producto === productoId)
+          ?.inventarios || []
+      ).filter(
+        (inv) =>
+          Number(inv.cantidad) > 0 ||
+          Number(inv.subCantidad) > 0 ||
+          Number(inv.peso) > 0
+      ) || [];
 
     const totalCantidad = lotesFiltrados.reduce(
       (total, inv) => total + (Number(inv.cantidad) || 0),
@@ -134,9 +135,9 @@ const SalidaForm = ({
 
     let priceProduct = 0;
     if (!precio) {
-      setPrecio(productoSeleccionado?.inventarios[0]?.lote?.producto?.precio);
+      setPrecio(productoSeleccionado?.inventarios?.[0]?.lote?.producto?.precio);
       priceProduct =
-        productoSeleccionado?.inventarios[0]?.lote?.producto?.precio;
+        productoSeleccionado?.inventarios?.[0]?.lote?.producto?.precio;
     } else {
       priceProduct = precio;
     }
@@ -352,7 +353,7 @@ const SalidaForm = ({
   ];
 
   const productosUnicosFiltrados = productosUnicos.filter(
-    (producto) => producto.inventarios.length > 0
+    (producto) => (producto?.inventarios || []).length > 0
   );
 
   const handleChangeMetodo = (event) => {
@@ -451,9 +452,7 @@ const SalidaForm = ({
                       key={lote?.lote?.id_lote}
                       value={lote?.lote?.id_lote}
                     >
-                      {new Date(lote?.lote?.fecha_ingreso).toLocaleDateString(
-                        "es-ES"
-                      )}
+                      {formatLapazDate(lote?.lote?.fecha_ingreso, "date")}
                     </MenuItem>
                   ))}
                 </Select>

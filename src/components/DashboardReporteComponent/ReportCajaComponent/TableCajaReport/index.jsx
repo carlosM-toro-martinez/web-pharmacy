@@ -20,6 +20,7 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import useStyles from "./tableCaja.styles";
 import background from "../../../../assets/images/logos/3.png";
+import { formatLapazDate } from "../../../../utils/dateUtils";
 
 function TableCajaReport({ reportData }) {
   const classes = useStyles();
@@ -34,9 +35,9 @@ function TableCajaReport({ reportData }) {
     const tableData = reportData.map((caja) => [
       caja.monto_inicial,
       caja.monto_final,
-      new Date(caja.fecha_apertura).toLocaleString(),
+      formatLapazDate(caja.fecha_apertura, "datetime"),
       caja.fecha_cierre
-        ? new Date(caja.fecha_cierre).toLocaleString()
+        ? formatLapazDate(caja.fecha_cierre, "datetime")
         : "No cerrado",
       `${caja.trabajadorCierre?.nombre || ""} ${
         caja.trabajadorCierre?.apellido_paterno || ""
@@ -73,7 +74,7 @@ function TableCajaReport({ reportData }) {
         body: caja.movimientos.map((movimiento) => [
           movimiento.tipo_movimiento,
           movimiento.monto,
-          new Date(movimiento.fecha_movimiento).toLocaleString(),
+          formatLapazDate(movimiento.fecha_movimiento, "datetime"),
           movimiento.motivo,
           `${movimiento?.trabajadorMovimiento?.nombre} ${movimiento?.trabajadorMovimiento?.apellido_paterno}`,
         ]),
@@ -128,6 +129,7 @@ function TableCajaReport({ reportData }) {
                 Fecha Apertura
               </TableCell>
               <TableCell style={{ fontWeight: "bold" }}>Fecha Cierre</TableCell>
+              <TableCell style={{ fontWeight: "bold" }}>Sucursal</TableCell>
               <TableCell style={{ fontWeight: "bold" }}>Trabajador</TableCell>
             </TableRow>
           </TableHead>
@@ -172,19 +174,20 @@ function CajaRow({ caja }) {
         </TableCell>
         <TableCell>{caja.monto_inicial}</TableCell>
         <TableCell>{caja.monto_final}</TableCell>
-        <TableCell>{new Date(caja.fecha_apertura).toLocaleString()}</TableCell>
+        <TableCell>{formatLapazDate(caja.fecha_apertura, "datetime")}</TableCell>
         <TableCell>
           {caja.fecha_cierre
-            ? new Date(caja.fecha_cierre).toLocaleString()
+            ? formatLapazDate(caja.fecha_cierre, "datetime")
             : "No cerrado"}
         </TableCell>
+        <TableCell>{caja.sucursal?.nombre || "-"}</TableCell>
         <TableCell>{`${caja.trabajadorCierre?.nombre || ""} ${
           caja.trabajadorCierre?.apellido_paterno || ""
         }`}</TableCell>
       </TableRow>
 
       <TableRow>
-        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
+        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <Box className={classes.collapseContainer}>
               <Typography variant="h6" gutterBottom>
@@ -206,7 +209,7 @@ function CajaRow({ caja }) {
                       <TableCell>{movimiento.tipo_movimiento}</TableCell>
                       <TableCell>{movimiento.monto}</TableCell>
                       <TableCell>
-                        {new Date(movimiento.fecha_movimiento).toLocaleString()}
+                        {formatLapazDate(movimiento.fecha_movimiento, "datetime")}
                       </TableCell>
                       <TableCell>{movimiento.motivo}</TableCell>
                       <TableCell>{`${movimiento?.trabajadorMovimiento?.nombre} ${movimiento?.trabajadorMovimiento?.apellido_paterno}`}</TableCell>

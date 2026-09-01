@@ -25,8 +25,10 @@ function useMain() {
   });
   const [products, setProducts] = useState();
 
-  const { data, isLoading, error, refetch } = useQuery(`cajaService`, () =>
-    cajaService()
+  const { data, isLoading, error, refetch } = useQuery(
+    ["cajaService", sucursal?.id_sucursal],
+    () => cajaService(sucursal?.id_sucursal),
+    { enabled: Boolean(token && sucursal?.id_sucursal) }
   );
 
   const { data: status, refetch: checkToken } = useQuery(
@@ -82,24 +84,6 @@ function useMain() {
       setAuth(false);
     }
   }, [token]);
-
-  useEffect(() => {
-    if (!token || sucursal?.id_sucursal) return;
-
-    const cargarSucursalPrincipal = async () => {
-      try {
-        const resp = await fetch(`${buildApiUri()}/v1/sucursales/principal`);
-        if (!resp.ok) return;
-        const sucursalPrincipal = await resp.json();
-        localStorage.setItem("sucursal", JSON.stringify(sucursalPrincipal));
-        setSucursal(sucursalPrincipal);
-      } catch (error) {
-        console.error("No se pudo cargar la sucursal principal", error);
-      }
-    };
-
-    cargarSucursalPrincipal();
-  }, [token, sucursal]);
 
   useEffect(() => {
     if (!isLoading && !error) {

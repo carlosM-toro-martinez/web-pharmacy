@@ -13,6 +13,9 @@ import {
   Snackbar,
   Alert,
   Select,
+  FormControlLabel,
+  Switch,
+  Box,
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { useMutation, useQuery } from "react-query";
@@ -20,11 +23,14 @@ import useStyles from "./tableTrabajadores.styles";
 import trabajadorDeleteServices from "../../async/services/delete/trabajadorDeleteServices";
 import sucursalesService from "../../async/services/get/sucursalesService";
 import trabajadorUpdateService from "../../async/services/put/trabajadorUpdateService";
+import EditTrabajadorModal from "../DashboardTrabajadoresComponent/EditTrabajadorModal";
 
 function TableTrabajadoresComponent({ trabajadores, onEdit, refetch }) {
   const classes = useStyles();
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedTrabajador, setSelectedTrabajador] = useState(null);
+  const [verDadosDeBaja, setVerDadosDeBaja] = useState(false);
+  const [editTrabajador, setEditTrabajador] = useState(null);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -54,7 +60,7 @@ function TableTrabajadoresComponent({ trabajadores, onEdit, refetch }) {
     onSuccess: () => {
       setSnackbar({
         open: true,
-        message: "Sucursal del trabajador actualizada.",
+        message: "Trabajador actualizado.",
         severity: "success",
       });
       refetch();
@@ -85,6 +91,23 @@ function TableTrabajadoresComponent({ trabajadores, onEdit, refetch }) {
     handleMenuClose();
   };
 
+  const handleReactivar = () => {
+    if (selectedTrabajador) {
+      updateMutation.mutate({
+        id_trabajador: selectedTrabajador.id_trabajador,
+        payload: { estado: true },
+      });
+    }
+    handleMenuClose();
+  };
+
+  const handleEditar = () => {
+    if (selectedTrabajador) {
+      setEditTrabajador(selectedTrabajador);
+    }
+    handleMenuClose();
+  };
+
   const handleSucursalChange = (trabajador, idSucursal) => {
     updateMutation.mutate({
       id_trabajador: trabajador.id_trabajador,
@@ -95,12 +118,23 @@ function TableTrabajadoresComponent({ trabajadores, onEdit, refetch }) {
   const handleSnackbarClose = () => {
     setSnackbar({ ...snackbar, open: false });
   };
-  const trabajadoresActivos = trabajadores.filter(
-    (trabajador) => trabajador.estado === true
+  const trabajadoresFiltrados = trabajadores.filter((trabajador) =>
+    verDadosDeBaja ? trabajador.estado === false : trabajador.estado === true
   );
 
   return (
     <Paper>
+      <Box sx={{ display: "flex", justifyContent: "flex-end", p: 1.5, pb: 0 }}>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={verDadosDeBaja}
+              onChange={(e) => setVerDadosDeBaja(e.target.checked)}
+            />
+          }
+          label="Ver dados de baja"
+        />
+      </Box>
       <TableContainer>
         <Table>
           <TableHead className={classes.tableHeader}>
@@ -123,7 +157,7 @@ function TableTrabajadoresComponent({ trabajadores, onEdit, refetch }) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {trabajadoresActivos.map((trabajador) => (
+            {trabajadoresFiltrados.map((trabajador) => (
               <TableRow key={trabajador.id_trabajador}>
                 <TableCell>{trabajador.nombre}</TableCell>
                 <TableCell>{trabajador.apellido_paterno}</TableCell>
@@ -168,7 +202,12 @@ function TableTrabajadoresComponent({ trabajadores, onEdit, refetch }) {
                     open={Boolean(anchorEl)}
                     onClose={handleMenuClose}
                   >
-                    <MenuItem onClick={handleDelete}>Dar de baja</MenuItem>
+                    <MenuItem onClick={handleEditar}>Editar</MenuItem>
+                    {selectedTrabajador?.estado ? (
+                      <MenuItem onClick={handleDelete}>Dar de baja</MenuItem>
+                    ) : (
+                      <MenuItem onClick={handleReactivar}>Reactivar</MenuItem>
+                    )}
                   </Menu>
                 </TableCell>
               </TableRow>
@@ -176,6 +215,17 @@ function TableTrabajadoresComponent({ trabajadores, onEdit, refetch }) {
           </TableBody>
         </Table>
       </TableContainer>
+      {editTrabajador && (
+        <EditTrabajadorModal
+          open={Boolean(editTrabajador)}
+          trabajador={editTrabajador}
+          handleClose={() => setEditTrabajador(null)}
+          onSaved={(message, severity = "success") => {
+            setSnackbar({ open: true, message, severity });
+            refetch();
+          }}
+        />
+      )}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}

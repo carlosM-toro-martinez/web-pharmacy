@@ -54,6 +54,7 @@ export default function TableMovementsComponent({ caja }) {
     new Date(fecha).toLocaleString("es-BO", {
       dateStyle: "short",
       timeStyle: "short",
+      timeZone: "America/La_Paz",
     });
 
   const trabajador = caja?.movimientos[0]?.trabajadorMovimiento;

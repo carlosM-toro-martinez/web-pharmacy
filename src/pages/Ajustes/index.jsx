@@ -19,16 +19,21 @@ import {
 } from "@mui/material";
 import SyncIcon from "@mui/icons-material/Sync";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import CleaningServicesIcon from "@mui/icons-material/CleaningServices";
 import DrawerComponent from "../../components/DrawerComponent";
 import { useMutation, useQuery } from "react-query";
 import ajustesResumenService from "../../async/services/get/ajustesResumenService";
+import ajustesMantenimientoService from "../../async/services/get/ajustesMantenimientoService";
+import ajustesStockService from "../../async/services/get/ajustesStockService";
 import ajustesSincronizarProductoService from "../../async/services/post/ajustesSincronizarProductoService";
 import ajustesSincronizarStockService from "../../async/services/post/ajustesSincronizarStockService";
+import ajustesLimpiarRegistrosVaciosService from "../../async/services/post/ajustesLimpiarRegistrosVaciosService";
 import sucursalesService from "../../async/services/get/sucursalesService";
 import sucursalAddService from "../../async/services/post/sucursalAddService";
 import sucursalTransferirService from "../../async/services/post/sucursalTransferirService";
 import sucursalUpdateService from "../../async/services/put/sucursalUpdateService";
 import sucursalPrincipalService from "../../async/services/post/sucursalPrincipalService";
+import sucursalDeleteService from "../../async/services/delete/sucursalDeleteService";
 import inventarioService from "../../async/services/get/inventarioService";
 import { MainContext } from "../../context/MainContext";
 
@@ -61,10 +66,23 @@ function Ajustes() {
     "ajustes-resumen",
     ajustesResumenService
   );
+  const {
+    data: mantenimientoData,
+    isLoading: isLoadingMantenimiento,
+    refetch: refetchMantenimiento,
+  } = useQuery("ajustes-mantenimiento", ajustesMantenimientoService);
   const { data: sucursales = [], refetch: refetchSucursales } = useQuery(
     "sucursales",
     sucursalesService
   );
+  const {
+    data: stockComparacion,
+    isLoading: isLoadingStockComparacion,
+    isFetched: isFetchedStockComparacion,
+    refetch: refetchStockComparacion,
+  } = useQuery("ajustes-stock-comparacion", ajustesStockService, {
+    enabled: false,
+  });
   const {
     data: inventarioOrigen = [],
     isLoading: loadingInventarioOrigen,
@@ -87,6 +105,8 @@ function Ajustes() {
           severity: "success",
         });
         refetch();
+        refetchMantenimiento();
+        if (isFetchedStockComparacion) refetchStockComparacion();
       },
       onError: (err) => {
         setSnackbar({
@@ -107,7 +127,7 @@ function Ajustes() {
         message: "Stocks sincronizados correctamente.",
         severity: "success",
       });
-      refetch();
+      refetchStockComparacion();
     },
     onError: (err) => {
       setSnackbar({
@@ -119,6 +139,31 @@ function Ajustes() {
       });
     },
   });
+
+  const limpiarRegistrosVaciosMutation = useMutation(
+    ajustesLimpiarRegistrosVaciosService,
+    {
+      onSuccess: (response) => {
+        setSnackbar({
+          open: true,
+          message:
+            response?.message ||
+            "Mantenimiento de inventario ejecutado correctamente.",
+          severity: "success",
+        });
+        refetch();
+      },
+      onError: (err) => {
+        setSnackbar({
+          open: true,
+          message: `No se pudo ejecutar el mantenimiento: ${
+            err?.message || err || "Intente nuevamente."
+          }`,
+          severity: "error",
+        });
+      },
+    }
+  );
 
   const crearSucursalMutation = useMutation(sucursalAddService, {
     onSuccess: () => {
@@ -209,11 +254,44 @@ function Ajustes() {
     },
   });
 
-  const diferencias = data?.stock?.diferencias || [];
+  const eliminarSucursalMutation = useMutation(sucursalDeleteService, {
+    onSuccess: () => {
+      setSnackbar({
+        open: true,
+        message: "Sucursal eliminada.",
+        severity: "success",
+      });
+      refetchSucursales();
+    },
+    onError: (err) => {
+      setSnackbar({
+        open: true,
+        message: err?.message || "No se pudo eliminar la sucursal.",
+        severity: "error",
+      });
+    },
+  });
+
+  const handleEliminarSucursal = (sucursal) => {
+    if (
+      window.confirm(
+        `¿Eliminar la sucursal "${sucursal.nombre}"? Esto no se puede deshacer.`
+      )
+    ) {
+      eliminarSucursalMutation.mutate(sucursal.id_sucursal);
+    }
+  };
+
+  const diferencias = stockComparacion?.diferencias || [];
   const inventariosHuerfanos = data?.huerfanos?.huerfanos || [];
   const inventariosNegativos = data?.negativos?.inventarios || [];
   const comprasDuplicadas = data?.comprasDuplicadas?.duplicadas || [];
   const movimientosDuplicados = data?.movimientosDuplicados?.duplicados || [];
+  const proveedoresDivergentes = data?.proveedoresDivergentes?.productos || [];
+  const mantenimiento = mantenimientoData || data?.mantenimiento || {};
+  const totalRegistrosVacios =
+    (mantenimiento.inventariosVacios || 0) +
+    (mantenimiento.lotesVaciosBorrables || 0);
   const totalInventariosConAlerta =
     (data?.huerfanos?.totalHuerfanos || 0) +
     (data?.negativos?.totalNegativos || 0);
@@ -244,7 +322,10 @@ function Ajustes() {
     crearSucursalMutation.isLoading ||
     transferirMutation.isLoading ||
     actualizarSucursalMutation.isLoading ||
-    marcarPrincipalMutation.isLoading;
+    marcarPrincipalMutation.isLoading ||
+    eliminarSucursalMutation.isLoading ||
+    limpiarRegistrosVaciosMutation.isLoading ||
+    isLoadingMantenimiento;
 
   const handleCrearSucursal = () => {
     crearSucursalMutation.mutate(nuevaSucursal);
@@ -307,6 +388,44 @@ function Ajustes() {
           Ajustes y auditoria
         </Typography>
 
+        {isLoading && (
+          <Paper sx={{ p: 2, mb: 3 }}>
+            <Box
+              sx={{
+                display: "flex",
+                gap: 2,
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
+            >
+              <Box>
+                <Typography sx={{ fontWeight: "bold", fontSize: "1.2rem" }}>
+                  Mantenimiento de rendimiento
+                </Typography>
+                <Typography color="text.secondary">
+                  Elimina inventarios en cero y lotes vacios sin ventas
+                  asociadas para reducir registros que frenan las consultas.
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 1 }}>
+                  {mantenimiento.inventariosVacios || 0} inventario(s) vacio(s)
+                  {" | "}
+                  {mantenimiento.lotesVaciosBorrables || 0} lote(s) borrable(s)
+                </Typography>
+              </Box>
+              <Button
+                variant="contained"
+                color="error"
+                startIcon={<CleaningServicesIcon />}
+                onClick={() => limpiarRegistrosVaciosMutation.mutate()}
+                disabled={loadingAction || totalRegistrosVacios === 0}
+              >
+                Limpiar registros vacios
+              </Button>
+            </Box>
+          </Paper>
+        )}
+
         {isLoading ? (
           <Paper sx={{ p: 3, textAlign: "center" }}>
             <CircularProgress />
@@ -323,35 +442,12 @@ function Ajustes() {
                 display: "grid",
                 gridTemplateColumns: {
                   xs: "1fr",
-                  md: "repeat(3, minmax(0, 1fr))",
+                  md: "repeat(2, minmax(0, 1fr))",
                 },
                 gap: 2,
                 mb: 3,
               }}
             >
-              <Paper sx={{ p: 2 }}>
-                <Typography color="text.secondary">Productos revisados</Typography>
-                <Typography sx={{ fontSize: "2rem", fontWeight: "bold" }}>
-                  {data?.stock?.totalProductos || 0}
-                </Typography>
-              </Paper>
-              <Paper sx={{ p: 2 }}>
-                <Typography color="text.secondary">
-                  Diferencias de stock
-                </Typography>
-                <Typography
-                  sx={{
-                    fontSize: "2rem",
-                    fontWeight: "bold",
-                    color:
-                      data?.stock?.totalDiferencias > 0
-                        ? "error.main"
-                        : "success.main",
-                  }}
-                >
-                  {data?.stock?.totalDiferencias || 0}
-                </Typography>
-              </Paper>
               <Paper sx={{ p: 2 }}>
                 <Typography color="text.secondary">
                   Inventarios con alerta
@@ -360,7 +456,51 @@ function Ajustes() {
                   {totalInventariosConAlerta}
                 </Typography>
               </Paper>
+              <Paper sx={{ p: 2 }}>
+                <Typography color="text.secondary">
+                  Registros vacios borrables
+                </Typography>
+                <Typography sx={{ fontSize: "2rem", fontWeight: "bold" }}>
+                  {totalRegistrosVacios}
+                </Typography>
+              </Paper>
             </Box>
+
+            <Paper sx={{ p: 2, mb: 3 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 2,
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                }}
+              >
+                <Box>
+                  <Typography sx={{ fontWeight: "bold", fontSize: "1.2rem" }}>
+                    Mantenimiento de rendimiento
+                  </Typography>
+                  <Typography color="text.secondary">
+                    Elimina inventarios en cero y lotes vacios sin ventas
+                    asociadas para reducir registros que frenan las consultas.
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 1 }}>
+                    {mantenimiento.inventariosVacios || 0} inventario(s) vacio(s)
+                    {" | "}
+                    {mantenimiento.lotesVaciosBorrables || 0} lote(s) borrable(s)
+                  </Typography>
+                </Box>
+                <Button
+                  variant="contained"
+                  color="error"
+                  startIcon={<CleaningServicesIcon />}
+                  onClick={() => limpiarRegistrosVaciosMutation.mutate()}
+                  disabled={loadingAction || totalRegistrosVacios === 0}
+                >
+                  Limpiar registros vacios
+                </Button>
+              </Box>
+            </Paper>
 
             <Paper sx={{ p: 2, mb: 3 }}>
               <Typography sx={{ fontWeight: "bold", fontSize: "1.2rem" }}>
@@ -667,6 +807,15 @@ function Ajustes() {
                       >
                         Hacer principal
                       </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="error"
+                        disabled={loadingAction}
+                        onClick={() => handleEliminarSucursal(sucursal)}
+                      >
+                        Eliminar
+                      </Button>
                     </Box>
                   </Paper>
                 ))}
@@ -689,96 +838,125 @@ function Ajustes() {
                   </Typography>
                   <Typography color="text.secondary">
                     Producto se corrige usando la suma real de Inventario.
+                    Como Stock Inicial y Transferencias ahora también
+                    mantienen esto sincronizado, ya no se calcula solo al
+                    entrar aquí — pídelo cuando quieras verificarlo.
                   </Typography>
+                  {isFetchedStockComparacion && (
+                    <Typography sx={{ mt: 1 }}>
+                      {stockComparacion?.totalProductos || 0} producto(s)
+                      revisado(s),{" "}
+                      <strong
+                        style={{
+                          color:
+                            (stockComparacion?.totalDiferencias || 0) > 0
+                              ? "#d32f2f"
+                              : "#2e7d32",
+                        }}
+                      >
+                        {stockComparacion?.totalDiferencias || 0} diferencia(s)
+                      </strong>
+                    </Typography>
+                  )}
                 </Box>
                 <Box sx={{ display: "flex", gap: 1 }}>
                   <Button
                     variant="outlined"
-                    startIcon={<RefreshIcon />}
-                    onClick={() => refetch()}
-                    disabled={loadingAction}
+                    startIcon={
+                      isLoadingStockComparacion ? (
+                        <CircularProgress size={16} />
+                      ) : (
+                        <RefreshIcon />
+                      )
+                    }
+                    onClick={() => refetchStockComparacion()}
+                    disabled={loadingAction || isLoadingStockComparacion}
                   >
-                    Actualizar
+                    {isFetchedStockComparacion ? "Verificar de nuevo" : "Verificar ahora"}
                   </Button>
-                  <Button
-                    variant="contained"
-                    color="warning"
-                    startIcon={<SyncIcon />}
-                    onClick={() => sincronizarTodoMutation.mutate()}
-                    disabled={loadingAction || diferencias.length === 0}
-                  >
-                    Sincronizar todo
-                  </Button>
+                  {isFetchedStockComparacion && (
+                    <Button
+                      variant="contained"
+                      color="warning"
+                      startIcon={<SyncIcon />}
+                      onClick={() => sincronizarTodoMutation.mutate()}
+                      disabled={loadingAction || diferencias.length === 0}
+                    >
+                      Sincronizar todo
+                    </Button>
+                  )}
                 </Box>
               </Box>
             </Paper>
 
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
-                  <TableRow>
-                    <TableCell>Producto</TableCell>
-                    <TableCell>Codigo</TableCell>
-                    <TableCell align="right">Producto u.</TableCell>
-                    <TableCell align="right">Inventario u.</TableCell>
-                    <TableCell align="right">Dif. u.</TableCell>
-                    <TableCell align="right">Producto cajas</TableCell>
-                    <TableCell align="right">Inventario cajas</TableCell>
-                    <TableCell align="right">Peso dif.</TableCell>
-                    <TableCell align="center">Accion</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {diferencias.length === 0 ? (
+            {isFetchedStockComparacion && (
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
                     <TableRow>
-                      <TableCell colSpan={9} align="center">
-                        No hay diferencias entre Producto e Inventario.
-                      </TableCell>
+                      <TableCell>Producto</TableCell>
+                      <TableCell>Codigo</TableCell>
+                      <TableCell align="right">Producto u.</TableCell>
+                      <TableCell align="right">Inventario u.</TableCell>
+                      <TableCell align="right">Dif. u.</TableCell>
+                      <TableCell align="right">Producto cajas</TableCell>
+                      <TableCell align="right">Inventario cajas</TableCell>
+                      <TableCell align="right">Peso dif.</TableCell>
+                      <TableCell align="center">Accion</TableCell>
                     </TableRow>
-                  ) : (
-                    diferencias.map((row) => (
-                      <TableRow key={row.id_producto} hover>
-                        <TableCell sx={{ fontWeight: "bold" }}>
-                          {row.nombre}
-                        </TableCell>
-                        <TableCell>{row.codigo_barra || "N/A"}</TableCell>
-                        <TableCell align="right">
-                          {row.producto.subCantidad}
-                        </TableCell>
-                        <TableCell align="right">
-                          {row.inventario.subCantidad}
-                        </TableCell>
-                        <TableCell align="right">
-                          {row.diferencia.subCantidad}
-                        </TableCell>
-                        <TableCell align="right">{row.producto.stock}</TableCell>
-                        <TableCell align="right">
-                          {row.inventario.stock}
-                        </TableCell>
-                        <TableCell align="right">
-                          {formatNumber(row.diferencia.peso)}
-                        </TableCell>
-                        <TableCell align="center">
-                          <Button
-                            variant="contained"
-                            size="small"
-                            startIcon={<SyncIcon />}
-                            onClick={() =>
-                              sincronizarProductoMutation.mutate(
-                                row.id_producto
-                              )
-                            }
-                            disabled={loadingAction}
-                          >
-                            Sincronizar
-                          </Button>
+                  </TableHead>
+                  <TableBody>
+                    {diferencias.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={9} align="center">
+                          No hay diferencias entre Producto e Inventario.
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                    ) : (
+                      diferencias.map((row) => (
+                        <TableRow key={row.id_producto} hover>
+                          <TableCell sx={{ fontWeight: "bold" }}>
+                            {row.nombre}
+                          </TableCell>
+                          <TableCell>{row.codigo_barra || "N/A"}</TableCell>
+                          <TableCell align="right">
+                            {row.producto.subCantidad}
+                          </TableCell>
+                          <TableCell align="right">
+                            {row.inventario.subCantidad}
+                          </TableCell>
+                          <TableCell align="right">
+                            {row.diferencia.subCantidad}
+                          </TableCell>
+                          <TableCell align="right">{row.producto.stock}</TableCell>
+                          <TableCell align="right">
+                            {row.inventario.stock}
+                          </TableCell>
+                          <TableCell align="right">
+                            {formatNumber(row.diferencia.peso)}
+                          </TableCell>
+                          <TableCell align="center">
+                            <Button
+                              variant="contained"
+                              size="small"
+                              startIcon={<SyncIcon />}
+                              onClick={() =>
+                                sincronizarProductoMutation.mutate(
+                                  row.id_producto
+                                )
+                              }
+                              disabled={loadingAction}
+                            >
+                              Sincronizar
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
 
             <Box
               sx={{
@@ -975,6 +1153,57 @@ function Ajustes() {
                 </Table>
               </TableContainer>
             </Box>
+
+            <TableContainer component={Paper} sx={{ mt: 3 }}>
+              <Box sx={{ p: 2 }}>
+                <Typography sx={{ fontWeight: "bold", fontSize: "1.1rem" }}>
+                  Productos con proveedores distintos en sus lotes
+                </Typography>
+                <Typography color="text.secondary">
+                  Un mismo producto con lotes de distinto proveedor (o sin
+                  proveedor) aparece fragmentado al buscarlo para vender.
+                  Corrígelo editando el proveedor de cada lote en{" "}
+                  <strong>Almacenes → Ver producto</strong>.
+                </Typography>
+              </Box>
+              <Table>
+                <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
+                  <TableRow>
+                    <TableCell>Producto</TableCell>
+                    <TableCell>Proveedores encontrados</TableCell>
+                    <TableCell align="right">Unidades totales</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {proveedoresDivergentes.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3} align="center">
+                        No hay productos con proveedores distintos entre sus
+                        lotes.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    proveedoresDivergentes.slice(0, 30).map((producto) => (
+                      <TableRow key={producto.id_producto} hover>
+                        <TableCell sx={{ fontWeight: "bold" }}>
+                          {producto.nombre}
+                        </TableCell>
+                        <TableCell>
+                          {producto.proveedores
+                            .map(
+                              (p) => `${p.nombre} (${p.unidades}u, ${p.lotes} lote${p.lotes === 1 ? "" : "s"})`
+                            )
+                            .join(" · ")}
+                        </TableCell>
+                        <TableCell align="right">
+                          {producto.totalUnidades}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </>
         )}
       </Box>

@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import AddIcon from "@mui/icons-material/Add";
+import SendIcon from "@mui/icons-material/Send";
 import { MainContext } from "../../context/MainContext";
 import FormMetodoVentaComponent from "../../components/FormMetodoVentaComponent";
 import productosService from "../../async/services/get/productosService";
@@ -25,7 +26,7 @@ import TableVentasReport from "../../components/DashboardReporteComponent/Report
 import ventasTodayService from "../../async/services/get/ventasTodayService.js";
 import empty from "../../assets/images/empty.svg";
 function Ventas() {
-  const { data, user } = useContext(MainContext);
+  const { data, user, sucursal } = useContext(MainContext);
 
   const {
     data: reportVentas,
@@ -33,9 +34,12 @@ function Ventas() {
     isError: isErrorVentas,
     refetch: refetchVentas,
   } = useQuery("ventasToday", ventasTodayService);
+  const idSucursal =
+    sucursal?.id_sucursal || user?.id_sucursal || data?.caja?.id_sucursal || null;
   const { data: productos, isLoading: isLoadingProductos } = useQuery(
-    "products",
-    productosService
+    ["products", idSucursal],
+    () => productosService(idSucursal),
+    { enabled: Boolean(idSucursal) }
   );
 
   function ordenarPorIdVenta(arr) {
@@ -121,13 +125,22 @@ function Ventas() {
             >
               Ventas
             </Typography>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={handleButtonClick}
-            >
-              Crear Nueva Venta
-            </Button>
+            <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", justifyContent: "center" }}>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleButtonClick}
+              >
+                Crear Nueva Venta
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<SendIcon />}
+                onClick={() => navigate("/reportes/transferencias")}
+              >
+                Ver transferencias
+              </Button>
+            </Box>
             {/* Condición para mostrar un loading o el reporte de ventas */}
             {isLoadingVentas ? (
               <Box

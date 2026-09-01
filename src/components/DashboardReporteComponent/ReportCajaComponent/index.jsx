@@ -1,158 +1,163 @@
 import React, { useState } from "react";
 import { useQuery } from "react-query";
 import {
-  MenuItem,
-  Select,
-  Button,
-  FormControl,
-  InputLabel,
-  Typography,
-  CircularProgress,
+  Alert,
   Box,
+  Button,
+  CircularProgress,
+  MenuItem,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
 } from "@mui/material";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import DrawerComponent from "../../DrawerComponent";
-import cajaAllService from "../../../async/services/get/cajaAllService.js";
+import sucursalesService from "../../../async/services/get/sucursalesService";
 import reportCajasService from "../../../async/services/get/reportCajasService.js";
 import TableCajasReport from "./TableCajaReport";
 
+const haceNDias = (n) => {
+  const fecha = new Date();
+  fecha.setDate(fecha.getDate() - n);
+  return fecha.toISOString().slice(0, 10);
+};
+
+const primerDiaDelMes = () => {
+  const fecha = new Date();
+  fecha.setDate(1);
+  return fecha.toISOString().slice(0, 10);
+};
+
+const hoy = () => new Date().toISOString().slice(0, 10);
+
+const initialFilters = {
+  desde: haceNDias(7),
+  hasta: hoy(),
+  id_sucursal: "",
+};
+
 function ReportCajaComponent() {
-  const [idInicio, setIdInicio] = useState(null);
-  const [idFinal, setIdFinal] = useState(null);
+  const [filters, setFilters] = useState(initialFilters);
+  const [appliedFilters, setAppliedFilters] = useState(initialFilters);
 
-  const { data: cajas, isLoading: isLoadingCajas } = useQuery(
-    "cajas",
-    cajaAllService
-  );
-
+  const { data: sucursales = [] } = useQuery("sucursales", sucursalesService);
   const {
-    data: reportData,
-    refetch: fetchReport,
+    data: reportData = [],
     isLoading: isLoadingReport,
     error: reportError,
-  } = useQuery(
-    ["reporteCajas", idInicio, idFinal],
-    () => reportCajasService(idInicio, idFinal),
-    {
-      enabled: false,
-    }
+  } = useQuery(["reporte-cajas", appliedFilters], () =>
+    reportCajasService(appliedFilters)
   );
 
-  const handleInicioChange = (event) => {
-    setIdInicio(event.target.value);
+  const handleChange = (event) => {
+    setFilters((previous) => ({
+      ...previous,
+      [event.target.name]: event.target.value,
+    }));
   };
 
-  const handleFinalChange = (event) => {
-    setIdFinal(event.target.value);
+  const handleSearch = (event) => {
+    event.preventDefault();
+    setAppliedFilters(filters);
   };
 
-  const handleGenerateReport = () => {
-    if (idInicio && idFinal) {
-      fetchReport();
-    }
+  const aplicarPreset = (nuevosFiltros) => {
+    const combinado = { ...filters, ...nuevosFiltros };
+    setFilters(combinado);
+    setAppliedFilters(combinado);
   };
 
   return (
     <DrawerComponent>
-      {!isLoadingCajas ? (
-        <Box>
-          <Typography
-            component={"h2"}
-            style={{
-              textAlign: "center",
-              fontSize: "2rem",
-              fontWeight: "bold",
-              margin: "1rem 0 0 0",
-            }}
-          >
-            Reporte de Cajas
-          </Typography>
-          <Box
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              gap: "5rem",
-              alignItems: "center",
-              marginTop: "3rem",
-            }}
-          >
-            <FormControl style={{ width: "20rem" }}>
-              <InputLabel id="select-inicio-label">Fecha de Inicio</InputLabel>
-              <Select
-                label="Fecha de Inicio"
-                labelId="select-inicio-label"
-                value={idInicio}
-                onChange={handleInicioChange}
-              >
-                {cajas?.map((caja) => (
-                  <MenuItem key={caja.id_caja} value={caja.id_caja}>
-                    {new Date(caja.fecha_apertura).toLocaleDateString()}{" "}
-                    {caja.trabajadorCierre.nombre},{" "}
-                    {caja.movimientos[0]?.trabajadorMovimiento.nombre}{" "}
-                    <span
-                      style={{
-                        color: caja.movimientos.length === 0 ? "green" : "red",
-                      }}
-                    >
-                      {caja.movimientos.length === 0 ? "Abierta" : "Cerrada"}
-                    </span>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+      <Box sx={{ p: { xs: 1, md: 3 } }}>
+        <Typography variant="h4" sx={{ mb: 1, fontWeight: 700 }}>
+          Reporte de cajas
+        </Typography>
+        <Typography color="text.secondary" sx={{ mb: 3 }}>
+          Aperturas y cierres de caja, de la más reciente a la más antigua.
+        </Typography>
 
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleGenerateReport}
-              disabled={!idInicio || !idFinal}
+        <Paper component="form" onSubmit={handleSearch} sx={{ p: 2, mb: 3 }}>
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            spacing={2}
+            alignItems={{ md: "flex-end" }}
+            flexWrap="wrap"
+            useFlexGap
+          >
+            <TextField
+              name="desde"
+              label="Desde"
+              type="date"
+              value={filters.desde}
+              onChange={handleChange}
+              InputLabelProps={{ shrink: true }}
+              size="small"
+            />
+            <TextField
+              name="hasta"
+              label="Hasta"
+              type="date"
+              value={filters.hasta}
+              onChange={handleChange}
+              InputLabelProps={{ shrink: true }}
+              size="small"
+            />
+            <TextField
+              select
+              name="id_sucursal"
+              label="Sucursal"
+              value={filters.id_sucursal}
+              onChange={handleChange}
+              size="small"
+              sx={{ minWidth: 190 }}
             >
-              Generar Reporte
+              <MenuItem value="">Todas</MenuItem>
+              {sucursales.map((sucursal) => (
+                <MenuItem key={sucursal.id_sucursal} value={sucursal.id_sucursal}>
+                  {sucursal.nombre}
+                </MenuItem>
+              ))}
+            </TextField>
+            <Button type="submit" variant="contained" startIcon={<RefreshIcon />}>
+              Buscar
             </Button>
-
-            <FormControl style={{ width: "20rem" }}>
-              <InputLabel id="select-final-label">Fecha Final</InputLabel>
-              <Select
-                label="Fecha Final"
-                labelId="select-final-label"
-                value={idFinal}
-                onChange={handleFinalChange}
-              >
-                {cajas?.map((caja) => (
-                  <MenuItem key={caja.id_caja} value={caja.id_caja}>
-                    {new Date(caja.fecha_apertura).toLocaleDateString()}{" "}
-                    {caja.trabajadorCierre.nombre},{" "}
-                    {caja.movimientos[0]?.trabajadorMovimiento.nombre}{" "}
-                    <span
-                      style={{
-                        color: caja.movimientos.length === 0 ? "green" : "red",
-                      }}
-                    >
-                      {" "}
-                      {caja.movimientos.length === 0 ? "Abierta" : "Cerrada"}
-                    </span>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
-
-          {isLoadingReport ? (
-            <Box
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                marginTop: "2rem",
-              }}
+            <Button
+              type="button"
+              onClick={() => aplicarPreset({ desde: hoy(), hasta: hoy() })}
             >
-              <CircularProgress />
-            </Box>
-          ) : (
-            reportData && <TableCajasReport reportData={reportData} />
-          )}
-        </Box>
-      ) : (
-        <Box>Cargando cajas...</Box>
-      )}
+              Hoy
+            </Button>
+            <Button
+              type="button"
+              onClick={() =>
+                aplicarPreset({ desde: haceNDias(7), hasta: hoy() })
+              }
+            >
+              Última semana
+            </Button>
+            <Button
+              type="button"
+              onClick={() =>
+                aplicarPreset({ desde: primerDiaDelMes(), hasta: hoy() })
+              }
+            >
+              Este mes
+            </Button>
+          </Stack>
+        </Paper>
+
+        {reportError ? (
+          <Alert severity="error">No se pudo cargar el reporte.</Alert>
+        ) : isLoadingReport ? (
+          <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <TableCajasReport reportData={reportData} />
+        )}
+      </Box>
     </DrawerComponent>
   );
 }

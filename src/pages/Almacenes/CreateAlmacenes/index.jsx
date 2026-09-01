@@ -1,7 +1,7 @@
 import React from "react";
 import DrawerComponent from "../../../components/DrawerComponent";
 import { useQuery } from "react-query";
-import productosService from "../../../async/services/get/productosService";
+import productosSimpleService from "../../../async/services/get/productosSimpleService";
 import proveedoresService from "../../../async/services/get/proveedoresService";
 import loteService from "../../../async/services/get/loteService";
 import RegisterBuyComponent from "../../../components/RegisterBuyComponent";
@@ -13,7 +13,7 @@ function CreateAlmacenes() {
     isLoading: isLoadingProducts,
     error: errorProducts,
     refetch: refetchProducts,
-  } = useQuery(`products`, productosService);
+  } = useQuery(`products-simple`, () => productosSimpleService({ limit: 3000 }));
   const {
     data: proveedoresData,
     isLoading: isLoadingProveedores,

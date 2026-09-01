@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Table,
   TableBody,
@@ -47,7 +47,11 @@ const ProductSelectedComponent = ({
       return producto.metodoSeleccionado.precio || 0;
     }
 
-    return producto.loteMasAntiguo.lote.precioVenta || 0;
+    return (
+      producto.loteMasAntiguo?.lote?.precioVenta ||
+      producto.newValue?.precio ||
+      0
+    );
   };
 
   const calcularCantidadActiva = (producto) => {
@@ -115,21 +119,27 @@ const ProductSelectedComponent = ({
     setProductosDetallados(updatedProductos);
   };
 
-  const productosConTotales = productosUnicosFiltrados.map((producto) => {
-    const totalCantidad = producto.inventarios.reduce(
-      (acc, inv) => acc + (inv.cantidad || 0),
-      0
-    );
-    const totalSubCantidad = producto.inventarios.reduce(
-      (acc, inv) => acc + (inv.subCantidad || 0),
-      0
-    );
-    return {
-      ...producto,
-      totalCantidad,
-      totalSubCantidad,
-    };
-  });
+  const productosConTotales = useMemo(
+    () =>
+      (productosUnicosFiltrados || [])
+        .filter(Boolean)
+        .map((producto) => {
+          const totalCantidad = (producto.inventarios || []).reduce(
+            (acc, inv) => acc + (inv.cantidad || 0),
+            0
+          );
+          const totalSubCantidad = (producto.inventarios || []).reduce(
+            (acc, inv) => acc + (inv.subCantidad || 0),
+            0
+          );
+          return {
+            ...producto,
+            totalCantidad,
+            totalSubCantidad,
+          };
+        }),
+    [productosUnicosFiltrados]
+  );
 
   return (
     <TableContainer component={Paper}>
@@ -225,7 +235,9 @@ const ProductSelectedComponent = ({
                     <>
                       {metodoSeleccionado
                         ? metodoSeleccionado.precio
-                        : newValue?.inventarios[0]?.lote?.precioVenta}{" "}
+                        : newValue?.inventarios?.[0]?.lote?.precioVenta ||
+                          newValue?.precio ||
+                          0}{" "}
                       Bs
                     </>
                   </TableCell>

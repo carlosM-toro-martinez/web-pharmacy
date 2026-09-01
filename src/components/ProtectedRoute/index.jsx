@@ -23,9 +23,11 @@ const ProtectedRoute = ({ allowedPermissions = [] }) => {
     const userPermissions =
       user?.rol?.permisos?.map((permiso) => permiso.nombre) || [];
 
-    const hasPermission = allowedPermissions.some((permiso) =>
-      userPermissions.includes(permiso)
-    );
+    // Sin permisos indicados = cualquier trabajador logueado puede entrar
+    // (solo exige estar logueado, no un permiso especifico).
+    const hasPermission =
+      allowedPermissions.length === 0 ||
+      allowedPermissions.some((permiso) => userPermissions.includes(permiso));
 
     if (hasPermission) {
       return <Outlet />;

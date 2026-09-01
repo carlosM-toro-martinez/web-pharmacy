@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import DrawerComponent from "../../DrawerComponent";
+import { formatLapazDate } from "../../../utils/dateUtils";
 import { useQuery } from "react-query";
 import {
   Box,
@@ -51,7 +52,7 @@ function ReportWorkersComponent() {
               <Typography>Cantidad: {c.subCantidad}</Typography>
               <Typography>Precio Unitario: Bs. {c.precio_unitario}</Typography>
               <Typography variant="body2" color="text.secondary">
-                Fecha: {new Date(c.fecha_compra).toLocaleString()}
+                Fecha: {formatLapazDate(c.fecha_compra, "datetime")}
               </Typography>
             </CardContent>
           </Card>
@@ -85,7 +86,7 @@ function ReportWorkersComponent() {
                 </Typography>
               ))}
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                Fecha: {new Date(v.fecha_venta).toLocaleString()}
+                Fecha: {formatLapazDate(v.fecha_venta, "datetime")}
               </Typography>
             </CardContent>
           </Card>
@@ -110,7 +111,7 @@ function ReportWorkersComponent() {
               <Typography>Cantidad: {m.cantidad}</Typography>
               <Typography>Lote: {m.lote}</Typography>
               <Typography variant="body2" color="text.secondary">
-                Fecha: {new Date(m.fecha_movimiento).toLocaleString()}
+                Fecha: {formatLapazDate(m.fecha_movimiento, "datetime")}
               </Typography>
             </CardContent>
           </Card>

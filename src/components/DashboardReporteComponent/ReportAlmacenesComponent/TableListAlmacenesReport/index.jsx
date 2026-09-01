@@ -16,6 +16,7 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import useStyles from "./tableAlmacenes.styles";
 import background from "../../../../assets/images/logos/3.png";
+import { formatLapazDate } from "../../../../utils/dateUtils";
 
 export default function TableListAlmacenesReport({ reportData }) {
   const classes = useStyles();
@@ -34,8 +35,8 @@ export default function TableListAlmacenesReport({ reportData }) {
           prov.nombre,
           lote.detalleCompra.producto.nombre,
           lote.numero_lote,
-          new Date(lote.fecha_ingreso).toLocaleDateString(),
-          new Date(lote.fecha_caducidad).toLocaleDateString(),
+          formatLapazDate(lote.fecha_ingreso, "date"),
+          formatLapazDate(lote.fecha_caducidad, "date"),
           lote.cantidad,
           lote.subCantidad,
           lote.cantidadPorCaja || "N/A",
@@ -136,10 +137,10 @@ export default function TableListAlmacenesReport({ reportData }) {
                   <TableCell>{lote.detalleCompra.producto.nombre}</TableCell>
                   <TableCell>{lote.numero_lote}</TableCell>
                   <TableCell>
-                    {new Date(lote.fecha_ingreso).toLocaleDateString()}
+                    {formatLapazDate(lote.fecha_ingreso, "date")}
                   </TableCell>
                   <TableCell>
-                    {new Date(lote.fecha_caducidad).toLocaleDateString()}
+                    {formatLapazDate(lote.fecha_caducidad, "date")}
                   </TableCell>
                   <TableCell>{lote.cantidad}</TableCell>
                   <TableCell>{lote.subCantidad}</TableCell>

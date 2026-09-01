@@ -19,6 +19,8 @@ import CalculatorComponent from "./VentaForm/CalculatorComponent";
 import salidaInventarioAddService from "../../async/services/post/salidaInventarioAddService";
 import TicketComponent from "./TicketComponent";
 import { useReactToPrint } from "react-to-print";
+import BuscarOtraSucursalModal from "./BuscarOtraSucursalModal";
+import TravelExploreIcon from "@mui/icons-material/TravelExplore";
 
 function DashboardVentaComponent({
   products,
@@ -51,6 +53,7 @@ function DashboardVentaComponent({
   });
 
   const [openClientModal, setOpenClientModal] = useState(false);
+  const [openBuscarSucursal, setOpenBuscarSucursal] = useState(false);
   const [productosSeleccionados, setProductosSeleccionados] = useState([]);
   const [cancelForm, setCancelForm] = useState(null);
   const [restore, setRestoreDenom] = useState(null);
@@ -124,6 +127,10 @@ function DashboardVentaComponent({
           return cantidad;
         }
 
+        if (cantidadUnidad > 0 && !inventarioLote?.lote) {
+          return 0;
+        }
+
         if (cantidadUnidad <= 0 || cantidadPorCaja <= 0) {
           return 0;
         }
@@ -140,13 +147,14 @@ function DashboardVentaComponent({
           total: totalPrice,
           id_cliente: ventaData.clienteId,
           id_trabajador: ventaData.id_trabajador,
+          id_sucursal: caja?.caja?.id_sucursal || user?.id_sucursal || null,
           rebaja_aplicada: 0,
           descuento_fidelidad_aplicado: 0,
           metodo_pago: metodoPago,
         },
         id_caja: caja?.caja?.id_caja || 1,
         detalles: productosSeleccionados.map((p) => {
-          const inventarioLote = buscarPorIdLote(p.inventarios, p.id_lote);
+          const inventarioLote = buscarPorIdLote(p?.inventarios || [], p.id_lote);
 
           return {
             id_producto: p.id_producto,
@@ -227,7 +235,9 @@ function DashboardVentaComponent({
     for (const item of productosDetallados) {
       const producto = item.newValue;
       const lotesProducto = item.lotesFiltrados;
-      const price = parseFloat(item.loteMasAntiguo.lote.precioVenta);
+      const price = parseFloat(
+        item.loteMasAntiguo?.lote?.precioVenta || producto?.precio || 0
+      );
       const cantidadPorUnidad = item.cantidadPorUnidad;
       const cantidadPorCaja = item.cantidadPorCaja;
       const cantidad = item.cantidad;
@@ -275,14 +285,14 @@ function DashboardVentaComponent({
       return;
     }
 
-    let cajasRestantes = cantidadPorUnidad
+    let cajasRestantes = cantidadPorUnidad && cantidadPorCaja > 0
       ? Math.floor(cantidadPorUnidad / cantidadPorCaja)
-      : cantidad;
+      : cantidad || 0;
 
     let priceProduct = precio || precioManual || price;
 
-    const lotesOrdenados = lotesProducto.sort(
-      (a, b) => a.lote.id_lote - b.lote.id_lote
+    const lotesOrdenados = [...lotesProducto].sort(
+      (a, b) => (a.lote?.id_lote || 0) - (b.lote?.id_lote || 0)
     );
 
     const procesarLotes = (condicion, operacion) => {
@@ -311,7 +321,7 @@ function DashboardVentaComponent({
             addProducto(
               productoSeleccionado,
               clienteSeleccionado,
-              loteData.lote.id_lote,
+              loteData.lote?.id_lote || null,
               precioMetodo,
               loteData.subCantidad,
               loteData.cantidad
@@ -320,7 +330,7 @@ function DashboardVentaComponent({
             addProducto(
               productoSeleccionado,
               clienteSeleccionado,
-              loteData.lote.id_lote,
+              loteData.lote?.id_lote || null,
               precioMetodo,
               unidadesRestantes,
               Math.floor(cantidadCajas)
@@ -342,7 +352,7 @@ function DashboardVentaComponent({
                 addProducto(
                   productoSeleccionado,
                   clienteSeleccionado,
-                  loteData.lote.id_lote,
+                  loteData.lote?.id_lote || null,
                   priceProduct,
                   loteData.subCantidad,
                   loteData.cantidad
@@ -351,7 +361,7 @@ function DashboardVentaComponent({
                 addProducto(
                   productoSeleccionado,
                   clienteSeleccionado,
-                  loteData.lote.id_lote,
+                  loteData.lote?.id_lote || null,
                   priceProduct,
                   cantidadPorUnidad,
                   cajasRestantes
@@ -371,7 +381,7 @@ function DashboardVentaComponent({
                 addProducto(
                   productoSeleccionado,
                   clienteSeleccionado,
-                  loteData.lote.id_lote,
+                  loteData.lote?.id_lote || null,
                   priceProduct,
                   0,
                   loteData.cantidad
@@ -380,7 +390,7 @@ function DashboardVentaComponent({
                 addProducto(
                   productoSeleccionado,
                   clienteSeleccionado,
-                  loteData.lote.id_lote,
+                  loteData.lote?.id_lote || null,
                   priceProduct,
                   0,
                   cantidad
@@ -421,18 +431,44 @@ function DashboardVentaComponent({
 
   return (
     <Box style={{ minWidth: "100%" }}>
-      <Typography
-        variant="h3"
-        className={classes.header}
-        style={{
-          fontSize: "2rem",
-          fontWeight: "bold",
-          textAlign: "center",
+      <Box
+        sx={{
+          position: "relative",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
           marginBottom: "1rem",
         }}
       >
-        {movimientoInventario ? " Movimiento de inventario" : "Registrar Venta"}
-      </Typography>
+        <Typography
+          variant="h3"
+          className={classes.header}
+          style={{
+            fontSize: "2rem",
+            fontWeight: "bold",
+            textAlign: "center",
+          }}
+        >
+          {movimientoInventario ? " Movimiento de inventario" : "Registrar Venta"}
+        </Typography>
+        {!movimientoInventario && (
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<TravelExploreIcon />}
+            onClick={() => setOpenBuscarSucursal(true)}
+            sx={{ position: "absolute", right: 0 }}
+          >
+            Buscar en otra sucursal
+          </Button>
+        )}
+      </Box>
+      {openBuscarSucursal && (
+        <BuscarOtraSucursalModal
+          open={openBuscarSucursal}
+          handleClose={() => setOpenBuscarSucursal(false)}
+        />
+      )}
       <Grid container spacing={1}>
         <Grid item xs={11} md={12} ref={ventaFormRef}>
           <VentaForm

@@ -10,6 +10,9 @@ const getHeaders = () => {
   const headers = {
     "Content-Type": "application/json",
   };
+  if (typeof window !== "undefined" && window.location?.hostname) {
+    headers["X-Frontend-Host"] = window.location.hostname;
+  }
   if (token && token !== "null") {
     headers.Authorization = `Bearer ${token}`;
   }
@@ -41,7 +44,16 @@ const request = async (endpoint, payload, method, isFile) => {
       return error;
     }
   } else {
-    throw response.status;
+    let message = `Error ${response.status}`;
+    try {
+      const body = await response.json();
+      message = body?.error || body?.message || message;
+    } catch {
+      // el cuerpo no era JSON, se usa el mensaje por defecto
+    }
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
   }
 };
 

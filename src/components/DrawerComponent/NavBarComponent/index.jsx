@@ -15,6 +15,7 @@ import { MainContext } from "../../../context/MainContext";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import logoutService from "../../../async/services/post/logoutService";
 
 function NavBarComponent({ handleDrawerOpen, open, user }) {
   const { setToken, setUser, setSuperAdmin, sucursal, setSucursal } =
@@ -32,6 +33,7 @@ function NavBarComponent({ handleDrawerOpen, open, user }) {
     setAnchorEl(null);
   };
   const handleCloseSession = () => {
+    logoutService().catch(() => {});
     localStorage.setItem("token", null);
     setToken();
     localStorage.setItem("user", null);
