@@ -195,6 +195,13 @@ function DashboardVentaComponent({
         setProductosSeleccionados([]);
         setLoading(false);
 
+        // Si fallo por stock insuficiente (u otro motivo), la vista de
+        // inventario que tiene el trabajador puede estar desactualizada
+        // (por ej. otra venta consumio el mismo lote mientras esta pantalla
+        // seguia abierta) — se refresca para que el proximo intento use
+        // datos reales, en vez de dejar el mismo dato viejo que ya fallo.
+        refetchProducts();
+
         setSnackbar({
           open: true,
           message: `Error al procesar la venta: ${
