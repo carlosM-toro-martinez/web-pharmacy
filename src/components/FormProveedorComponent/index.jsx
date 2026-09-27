@@ -4,15 +4,17 @@ import { useMutation } from "react-query";
 import Alert from "@mui/material/Alert";
 import useStyles from "./formProveedor.styles";
 import proveedorAddServices from "../../async/services/post/proveedorAddServices";
+import proveedorUpdateService from "../../async/services/put/proveedorUpdateService";
 
-function FormProveedor({ handleClose, refetchProveedores }) {
+function FormProveedor({ handleClose, refetchProveedores, proveedorAEditar }) {
   const classes = useStyles();
+  const esEdicion = Boolean(proveedorAEditar?.id_proveedor);
   const [proveedor, setProveedor] = useState({
-    nombre: "",
-    telefono: "",
-    email: "",
-    direccion: "",
-    nitci: "",
+    nombre: proveedorAEditar?.nombre || "",
+    telefono: proveedorAEditar?.telefono || "",
+    email: proveedorAEditar?.email || "",
+    direccion: proveedorAEditar?.direccion || "",
+    nitci: proveedorAEditar?.nitci || "",
   });
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -31,24 +33,37 @@ function FormProveedor({ handleClose, refetchProveedores }) {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const mutation = useMutation(proveedorAddServices, {
-    onSuccess: () => {
-      setSnackbar({
-        open: true,
-        message: "Proveedor creado exitosamente!",
-        severity: "success",
-      });
-      handleClose();
-      refetchProveedores();
-    },
-    onError: (error) => {
-      setSnackbar({
-        open: true,
-        message: `Error al crear el proveedor: ${error.message}`,
-        severity: "error",
-      });
-    },
-  });
+  const mutation = useMutation(
+    esEdicion
+      ? (payload) =>
+          proveedorUpdateService({
+            id_proveedor: proveedorAEditar.id_proveedor,
+            ...payload,
+          })
+      : proveedorAddServices,
+    {
+      onSuccess: () => {
+        setSnackbar({
+          open: true,
+          message: esEdicion
+            ? "Proveedor actualizado exitosamente!"
+            : "Proveedor creado exitosamente!",
+          severity: "success",
+        });
+        handleClose();
+        refetchProveedores();
+      },
+      onError: (error) => {
+        setSnackbar({
+          open: true,
+          message: `Error al ${esEdicion ? "actualizar" : "crear"} el proveedor: ${
+            error.message
+          }`,
+          severity: "error",
+        });
+      },
+    }
+  );
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -59,7 +74,7 @@ function FormProveedor({ handleClose, refetchProveedores }) {
     <>
       <form className={classes.form} onSubmit={handleSubmit}>
         <Typography variant="h6" className={classes.title}>
-          Crear Proveedor
+          {esEdicion ? "Editar Proveedor" : "Crear Proveedor"}
         </Typography>
         <Grid container spacing={2}>
           <Grid item xs={12}>
@@ -133,7 +148,13 @@ function FormProveedor({ handleClose, refetchProveedores }) {
               className={classes.button}
               disabled={mutation.isLoading}
             >
-              {mutation.isLoading ? "Creando..." : "Crear Proveedor"}
+              {mutation.isLoading
+                ? esEdicion
+                  ? "Guardando..."
+                  : "Creando..."
+                : esEdicion
+                ? "Guardar Cambios"
+                : "Crear Proveedor"}
             </Button>
           </Grid>
         </Grid>

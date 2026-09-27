@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQuery } from "react-query";
 import DrawerComponent from "../../components/DrawerComponent";
 import TableProductsComponent from "../../components/TableProductsComponent";
@@ -7,11 +7,14 @@ import categoriasService from "../../async/services/get/categoriasService";
 import productosService from "../../async/services/get/productosService";
 import TableCategoriasComponent from "../../components/TableCategoriasComponent";
 import AddIcon from "@mui/icons-material/Add";
+import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined";
 import { useNavigate } from "react-router-dom";
 import proveedoresService from "../../async/services/get/proveedoresService";
+import ProveedoresManagerModal from "../../components/ProveedoresManagerModal";
 
 function Almacenes() {
   const navigate = useNavigate();
+  const [openProveedores, setOpenProveedores] = useState(false);
 
   const { data, isLoading, error, refetch } = useQuery(`sectionsProducts`, () =>
     productosService()
@@ -35,10 +38,6 @@ function Almacenes() {
     navigate("/almacenes/crear");
   };
 
-  const handleProveedorEdit = () => {
-    navigate("/almacenes/proveedor");
-  };
-
   return (
     <DrawerComponent>
       <Box
@@ -59,7 +58,7 @@ function Almacenes() {
         >
           Inventario
         </Typography>
-        <Box style={{ display: "flex", justifyContent: "center" }}>
+        <Box style={{ display: "flex", justifyContent: "center", gap: "1rem", flexWrap: "wrap" }}>
           <Button
             variant="contained"
             startIcon={<AddIcon />}
@@ -67,13 +66,20 @@ function Almacenes() {
           >
             Crear Nueva Compra
           </Button>
+          <Button
+            variant="outlined"
+            startIcon={<LocalShippingOutlinedIcon />}
+            onClick={() => setOpenProveedores(true)}
+          >
+            Proveedores
+          </Button>
         </Box>
         {!isLoading ? (
           Array.isArray(data) && data.length > 0 ? (
             <TableProductsComponent
               productos={data}
               refetchProducts={refetch}
-              proveedoresData={proveedoresData}
+              proveedoresData={(proveedoresData || []).filter((p) => p.activo !== false)}
             />
           ) : (
             <Typography variant="body1">
@@ -105,16 +111,14 @@ function Almacenes() {
           )
         ) : null}
 
-        {/* <Box style={{ display: "flex", justifyContent: "center" }}>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleProveedorEdit}
-          >
-            Editar proveedores
-          </Button>
-        </Box> */}
       </Box>
+
+      <ProveedoresManagerModal
+        open={openProveedores}
+        handleClose={() => setOpenProveedores(false)}
+        proveedores={proveedoresData}
+        refetchProveedores={refetchProveedores}
+      />
     </DrawerComponent>
   );
 }

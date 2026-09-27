@@ -43,7 +43,7 @@ function CreateAlmacenes() {
             <RegisterBuyComponent
               products={productsData}
               refetchProducts={refetchProducts}
-              proveedores={proveedoresData}
+              proveedores={(proveedoresData || []).filter((p) => p.activo !== false)}
               refetchProveedores={refetchProveedores}
               lotes={loteData}
               refetchLote={refetchLote}

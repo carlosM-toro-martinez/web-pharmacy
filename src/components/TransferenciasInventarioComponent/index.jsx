@@ -500,7 +500,9 @@ function TransferenciasInventarioComponent() {
                                 <MenuItem value="">
                                   <em>Sin proveedor</em>
                                 </MenuItem>
-                                {proveedoresData.map((proveedor) => (
+                                {proveedoresData
+                                  .filter((proveedor) => proveedor.activo !== false)
+                                  .map((proveedor) => (
                                   <MenuItem
                                     key={proveedor.id_proveedor}
                                     value={proveedor.id_proveedor}

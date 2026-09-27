@@ -17,22 +17,31 @@ function HistoryProductComponent({ history, producto }) {
     return format(new Date(dateString), "PPpp", { locale: es });
   };
 
-  // El stock actual es el único saldo real que tenemos; para mostrar
-  // "cantidad antes/después" por movimiento se reconstruye el saldo hacia
-  // atrás en el tiempo (compra suma, venta y salida sin venta restan).
-  // Nota: no incluye transferencias entre sucursales, así que el saldo
-  // reconstruido puede no cuadrar si el producto se transfirió alguna vez.
+  // El stock actual (stock.subCantidad) es el único saldo real que
+  // tenemos, y solo refleja movimientos de "subCantidad" (unidades
+  // sueltas) — "cantidad" (cajas/unidades completas) es un contador
+  // aparte que el backend decrementa por separado y que este saldo NO
+  // incluye, así que el movimiento de cada item debe leerse también solo
+  // de subCantidad; usar "cantidad" como respaldo cuenta dos veces una
+  // salida que nunca tocó el saldo real (se comprobó con datos reales:
+  // sin ese respaldo el saldo reconstruido cuadra exacto en 0 al llegar
+  // al movimiento más antiguo).
+  // Para mostrar "cantidad antes/después" por movimiento se reconstruye
+  // el saldo hacia atrás en el tiempo (compra y transferencia entrada
+  // suman; venta, salida sin venta y transferencia salida restan).
   const historialConSaldo = useMemo(() => {
     let saldo = Number(stock?.subCantidad) || 0;
     const resultado = new Array(historial.length);
     for (let i = historial.length - 1; i >= 0; i--) {
       const item = historial[i];
       const movimiento = Number(item.detalle?.subCantidad) || 0;
-      const esIngreso = item.tipo === "compra";
+      const esIngreso =
+        item.tipo === "compra" || item.tipo_movimiento === "Transferencia entrada";
       const despues = saldo;
       const antes = esIngreso ? despues - movimiento : despues + movimiento;
       resultado[i] = {
         ...item,
+        esIngreso,
         cantidadAntes: antes,
         cantidadDespues: despues,
         cantidadMovimiento: movimiento,
@@ -70,7 +79,7 @@ function HistoryProductComponent({ history, producto }) {
 
       <Grid container spacing={2}>
         {historialConSaldo
-          .filter((item) => item.detalle?.subCantidad > 0)
+          .filter((item) => item.cantidadMovimiento > 0)
           .map((item, index) => {
             let color = "";
             let title = "";
@@ -140,7 +149,7 @@ function HistoryProductComponent({ history, producto }) {
                     </Typography>
                     <Typography variant="body2">
                       <strong>
-                        {item.tipo === "compra" ? "Cantidad de entrada:" : "Cantidad de salida:"}
+                        {item.esIngreso ? "Cantidad de entrada:" : "Cantidad de salida:"}
                       </strong>{" "}
                       {item.cantidadMovimiento}
                     </Typography>

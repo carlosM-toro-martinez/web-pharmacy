@@ -71,17 +71,20 @@ const ProductSelectedComponent = ({
     return cantidadActiva;
   };
 
+  const calcularTotalProducto = (producto) => {
+    const precio = calcularPrecio(producto);
+    if (producto.precioManual) {
+      return precio;
+    }
+    const cantidadActiva = calcularCantidadActiva(producto);
+    return Number((precio * cantidadActiva).toFixed(2));
+  };
+
   const calcularSumaTotal = () =>
-    productosDetallados.reduce((total, producto) => {
-      const precio = calcularPrecio(producto);
-
-      const cantidadActiva = calcularCantidadActiva(producto);
-      if (producto.precioManual) {
-        return total + precio;
-      }
-
-      return Number((total + precio * cantidadActiva).toFixed(2));
-    }, 0);
+    productosDetallados.reduce(
+      (total, producto) => Number((total + calcularTotalProducto(producto)).toFixed(2)),
+      0
+    );
 
   useEffect(() => {
     const total = calcularSumaTotal();
@@ -187,6 +190,7 @@ const ProductSelectedComponent = ({
               "uso rest.",
               "Precio",
               "Cant. por unidad",
+              "Total",
               "Stock",
               "Eliminar",
             ].map((header, index) => (
@@ -194,7 +198,7 @@ const ProductSelectedComponent = ({
                 key={index}
                 sx={{
                   fontWeight: "bold",
-                  width: "16.6%",
+                  width: "14.28%",
                 }}
               >
                 {header}
@@ -274,6 +278,9 @@ const ProductSelectedComponent = ({
                         />
                       </>
                     )}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: "bold", color: "green" }}>
+                    {calcularTotalProducto(producto).toFixed(2)} Bs
                   </TableCell>
                   <TableCell
                     sx={{

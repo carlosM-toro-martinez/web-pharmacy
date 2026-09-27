@@ -534,6 +534,7 @@ function VentaRow({
                     {/* <TableCell>Cantidad</TableCell> */}
                     <TableCell>Cantidad por Unidad</TableCell>
                     <TableCell>Precio Unitario</TableCell>
+                    <TableCell>Total</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -552,6 +553,13 @@ function VentaRow({
                         </TableCell>
                         <TableCell>{detalle.subCantidad}</TableCell>
                         <TableCell>{detalle.precio_unitario}</TableCell>
+                        <TableCell sx={{ fontWeight: "bold", color: "green" }}>
+                          {(
+                            Number(detalle.subCantidad) *
+                            Number(detalle.precio_unitario)
+                          ).toFixed(2)}{" "}
+                          Bs
+                        </TableCell>
                       </TableRow>
                     ))}
                 </TableBody>
