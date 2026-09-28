@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Autocomplete,
   TextField,
@@ -15,8 +15,32 @@ const ProductoAutocompleteComponent = ({
   productosConTotales,
 }) => {
   const [inputValue, setInputValue] = useState("");
-  const [search, setSearch] = useState("");
   const [selectedValue, setSelectedValue] = useState(null);
+
+  // El texto por el que se busca (nombre + proveedor + codigo + forma +
+  // concentracion) es siempre el mismo mientras no cambie la lista de
+  // productos, asi que se arma UNA sola vez aqui en vez de reconstruirlo
+  // por cada opcion en cada letra que se escribe (antes filterOptions
+  // hacia ese trabajo de nuevo, para las ~2000 opciones, en cada tecla).
+  // No cambia que campos se buscan ni el resultado, solo cuando se calcula.
+  const opcionesBuscables = useMemo(
+    () =>
+      (productosConTotales || []).map((producto) => {
+        const nombre = (producto?.nombre || "").toLowerCase();
+        const combinado = [
+          producto?.nombre,
+          producto?.proveedor?.nombre,
+          producto?.codigo_barra,
+          producto?.forma_farmaceutica,
+          producto?.concentracion,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return { ...producto, _nombreLower: nombre, _combinadoLower: combinado };
+      }),
+    [productosConTotales]
+  );
 
   const handleInputChange = (event, newInputValue) => {
     setInputValue(newInputValue);
@@ -59,7 +83,7 @@ const ProductoAutocompleteComponent = ({
         }}
       >
         <Autocomplete
-          options={productosConTotales || []}
+          options={opcionesBuscables}
           getOptionLabel={(producto) => {
             const nombre = producto?.nombre?.toUpperCase() || "";
             const prov = producto?.proveedor?.nombre?.toUpperCase() || "";
@@ -81,7 +105,10 @@ const ProductoAutocompleteComponent = ({
             if (newValue) {
               handleProductoChange(newValue.id_producto, newValue);
             }
-            setInputValue(search);
+            // El texto de busqueda (inputValue) se deja tal cual estaba
+            // (ya lo mantiene actualizado handleInputChange en cada tecla),
+            // para que el cashero pueda seguir viendo los mismos resultados
+            // y elegir otro producto parecido sin tener que escribir de nuevo.
             setSelectedValue(null);
             setTimeout(() => setOpen(true), 0);
           }}
@@ -91,24 +118,13 @@ const ProductoAutocompleteComponent = ({
             option?.id_producto === value?.id_producto
           }
           filterOptions={(options, { inputValue }) => {
-            setSearch(inputValue);
-
             const query = inputValue.toLowerCase().trim();
             const searchWords = query.split(/\s+/).filter(Boolean);
             if (!searchWords.length) return options;
 
             const puntuar = (option) => {
-              const nombre = (option?.nombre || "").toLowerCase();
-              const combined = [
-                option?.nombre,
-                option?.proveedor?.nombre,
-                option?.codigo_barra,
-                option?.forma_farmaceutica,
-                option?.concentracion,
-              ]
-                .filter(Boolean)
-                .join(" ")
-                .toLowerCase();
+              const nombre = option._nombreLower || "";
+              const combined = option._combinadoLower || "";
 
               if (!searchWords.every((word) => combined.includes(word))) {
                 return null;
