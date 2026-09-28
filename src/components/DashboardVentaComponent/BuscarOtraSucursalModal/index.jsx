@@ -97,18 +97,28 @@ function BuscarOtraSucursalModal({ open, handleClose }) {
                     {getDetalleProducto(producto)}
                   </Typography>
                 )}
-                {getDetalleProducto(producto) && <br />}
-                <Typography variant="caption" color="text.secondary">
-                  Codigo: {producto.codigo_barra || "Sin codigo"}
-                </Typography>
-                {producto.precioVenta != null && (
-                  <>
-                    <br />
-                    <Typography variant="caption" color="text.secondary">
-                      Precio: {producto.precioVenta.toFixed(2)} Bs.
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    flexWrap: "wrap",
+                    mt: 0.3,
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary">
+                    Codigo: {producto.codigo_barra || "Sin codigo"}
+                  </Typography>
+                  {producto.precioVenta != null && (
+                    <Typography
+                      variant="body2"
+                      fontWeight={700}
+                      color="primary.main"
+                    >
+                      {producto.precioVenta.toFixed(2)} Bs.
                     </Typography>
-                  </>
-                )}
+                  )}
+                </Box>
                 <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap", mt: 1 }}>
                   {producto.sucursales.map((s) => (
                     <Chip
