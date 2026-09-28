@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
   Autocomplete,
   TextField,
@@ -6,6 +6,7 @@ import {
   Box,
   Typography,
 } from "@mui/material";
+import createVirtualizedListbox from "./VirtualizedListbox";
 
 const ProductoAutocompleteComponent = ({
   productosUnicosFiltrados,
@@ -16,6 +17,25 @@ const ProductoAutocompleteComponent = ({
 }) => {
   const [inputValue, setInputValue] = useState("");
   const [selectedValue, setSelectedValue] = useState(null);
+
+  // filterOptions deja aca, en cada busqueda, exactamente el arreglo que
+  // se va a mostrar (mismo orden). El listbox virtualizado lo usa para
+  // saber el texto real de la fila en cada posicion y calcularle su alto
+  // (nombres/proveedores largos ocupan mas de una linea).
+  const opcionesFiltradasRef = useRef([]);
+  const ListboxComponent = useMemo(
+    () =>
+      createVirtualizedListbox((index) => {
+        const opcion = opcionesFiltradasRef.current[index];
+        if (!opcion) return "";
+        const nombre = opcion.nombre || "";
+        const forma = opcion?.forma_farmaceutica || "";
+        const conc = opcion?.concentracion || "";
+        const prov = opcion.proveedor?.nombre?.toUpperCase() || "";
+        return `${nombre} ${forma} ${conc} "${prov}"`;
+      }),
+    []
+  );
 
   // El texto por el que se busca (nombre + proveedor + codigo + forma +
   // concentracion) es siempre el mismo mientras no cambie la lista de
@@ -120,7 +140,10 @@ const ProductoAutocompleteComponent = ({
           filterOptions={(options, { inputValue }) => {
             const query = inputValue.toLowerCase().trim();
             const searchWords = query.split(/\s+/).filter(Boolean);
-            if (!searchWords.length) return options;
+            if (!searchWords.length) {
+              opcionesFiltradasRef.current = options;
+              return options;
+            }
 
             const puntuar = (option) => {
               const nombre = option._nombreLower || "";
@@ -139,7 +162,7 @@ const ProductoAutocompleteComponent = ({
               return 3;
             };
 
-            return options
+            const resultado = options
               .map((option) => ({ option, puntaje: puntuar(option) }))
               .filter(({ puntaje }) => puntaje !== null)
               .sort((a, b) =>
@@ -148,7 +171,11 @@ const ProductoAutocompleteComponent = ({
                   : (a.option?.nombre || "").localeCompare(b.option?.nombre || "")
               )
               .map(({ option }) => option);
+
+            opcionesFiltradasRef.current = resultado;
+            return resultado;
           }}
+          ListboxComponent={ListboxComponent}
           renderOption={(props, option) => {
             const nombre = option.nombre || "";
             const prov = option.proveedor?.nombre?.toUpperCase() || "";
