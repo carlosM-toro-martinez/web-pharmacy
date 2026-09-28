@@ -16,6 +16,7 @@ const ProductoAutocompleteComponent = ({
   productosConTotales,
 }) => {
   const [inputValue, setInputValue] = useState("");
+  const [search, setSearch] = useState("");
   const [selectedValue, setSelectedValue] = useState(null);
 
   // filterOptions deja aca, en cada busqueda, exactamente el arreglo que
@@ -125,10 +126,13 @@ const ProductoAutocompleteComponent = ({
             if (newValue) {
               handleProductoChange(newValue.id_producto, newValue);
             }
-            // El texto de busqueda (inputValue) se deja tal cual estaba
-            // (ya lo mantiene actualizado handleInputChange en cada tecla),
-            // para que el cashero pueda seguir viendo los mismos resultados
-            // y elegir otro producto parecido sin tener que escribir de nuevo.
+            // Al seleccionar una opcion, MUI Autocomplete reemplaza el texto
+            // del campo por el label completo de la opcion elegida (su propio
+            // comportamiento por defecto). Esto lo revierte a lo que la
+            // persona realmente escribio ("search"), para que el campo se
+            // quede con "nov" (no "NOVADOL FORTE...") y pueda seguir
+            // buscando/eligiendo otro producto parecido sin escribir de nuevo.
+            setInputValue(search);
             setSelectedValue(null);
             setTimeout(() => setOpen(true), 0);
           }}
@@ -138,6 +142,7 @@ const ProductoAutocompleteComponent = ({
             option?.id_producto === value?.id_producto
           }
           filterOptions={(options, { inputValue }) => {
+            setSearch(inputValue);
             const query = inputValue.toLowerCase().trim();
             const searchWords = query.split(/\s+/).filter(Boolean);
             if (!searchWords.length) {
