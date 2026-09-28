@@ -101,14 +101,31 @@ function BuscarOtraSucursalModal({ open, handleClose }) {
                 <Typography variant="caption" color="text.secondary">
                   Codigo: {producto.codigo_barra || "Sin codigo"}
                 </Typography>
+                {producto.precioVenta != null && (
+                  <>
+                    <br />
+                    <Typography variant="caption" color="text.secondary">
+                      Precio: {producto.precioVenta.toFixed(2)} Bs.
+                    </Typography>
+                  </>
+                )}
                 <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap", mt: 1 }}>
                   {producto.sucursales.map((s) => (
                     <Chip
                       key={s.id_sucursal}
-                      label={`${s.nombre}: ${s.subCantidad} u.`}
-                      color="success"
+                      label={
+                        <span>
+                          {s.nombre}:{" "}
+                          <strong style={{ fontSize: "1.05rem" }}>
+                            {s.subCantidad}
+                          </strong>{" "}
+                          u.
+                        </span>
+                      }
+                      color={s.subCantidad > 0 ? "success" : "default"}
                       variant="outlined"
                       size="small"
+                      sx={{ height: "auto", py: 0.5 }}
                     />
                   ))}
                 </Box>
