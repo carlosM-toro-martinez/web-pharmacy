@@ -1057,6 +1057,8 @@ function Ajustes() {
                       <TableCell>Codigo</TableCell>
                       <TableCell>Sucursal</TableCell>
                       <TableCell align="right">Stock real</TableCell>
+                      <TableCell align="right">Compras</TableCell>
+                      <TableCell align="right">Saldo inicial</TableCell>
                       <TableCell align="right">Stock esperado</TableCell>
                       <TableCell align="right">Diferencia</TableCell>
                     </TableRow>
@@ -1064,7 +1066,7 @@ function Ajustes() {
                   <TableBody>
                     {descuadresPorSucursal.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} align="center">
+                        <TableCell colSpan={8} align="center">
                           No hay diferencias entre el stock real y lo esperado
                           segun el historial.
                         </TableCell>
@@ -1081,6 +1083,10 @@ function Ajustes() {
                           <TableCell>{row.codigo_barra || "N/A"}</TableCell>
                           <TableCell>{row.sucursal}</TableCell>
                           <TableCell align="right">{row.stockReal}</TableCell>
+                          <TableCell align="right">{row.totalCompras}</TableCell>
+                          <TableCell align="right">
+                            {row.totalSaldoInicial || 0}
+                          </TableCell>
                           <TableCell align="right">{row.stockEsperado}</TableCell>
                           <TableCell
                             align="right"
