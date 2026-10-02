@@ -26,6 +26,7 @@ import ajustesResumenService from "../../async/services/get/ajustesResumenServic
 import ajustesMantenimientoService from "../../async/services/get/ajustesMantenimientoService";
 import ajustesStockService from "../../async/services/get/ajustesStockService";
 import ajustesDescuadreStockService from "../../async/services/get/ajustesDescuadreStockService";
+import ajustesLotesSobrevendidosService from "../../async/services/get/ajustesLotesSobrevendidosService";
 import ajustesSincronizarProductoService from "../../async/services/post/ajustesSincronizarProductoService";
 import ajustesSincronizarStockService from "../../async/services/post/ajustesSincronizarStockService";
 import ajustesRegistrosVaciosService from "../../async/services/get/ajustesRegistrosVaciosService";
@@ -92,6 +93,16 @@ function Ajustes() {
   } = useQuery("ajustes-descuadre-stock", ajustesDescuadreStockService, {
     enabled: false,
   });
+  const {
+    data: lotesSobrevendidos,
+    isLoading: isLoadingLotesSobrevendidos,
+    isFetched: isFetchedLotesSobrevendidos,
+    refetch: refetchLotesSobrevendidos,
+  } = useQuery(
+    "ajustes-lotes-sobrevendidos",
+    ajustesLotesSobrevendidosService,
+    { enabled: false }
+  );
   const {
     data: registrosVacios,
     isLoading: isLoadingRegistrosVacios,
@@ -276,6 +287,7 @@ function Ajustes() {
 
   const diferencias = stockComparacion?.diferencias || [];
   const descuadresPorSucursal = descuadreStock?.diferencias || [];
+  const lotesSobrevendidosList = lotesSobrevendidos?.lotes || [];
   const inventariosVaciosList = registrosVacios?.inventariosVacios || [];
   const lotesVaciosBorrablesList = registrosVacios?.lotesVaciosBorrables || [];
   const inventariosHuerfanos = data?.huerfanos?.huerfanos || [];
@@ -1097,6 +1109,104 @@ function Ajustes() {
                           >
                             {row.diferencia > 0 ? "+" : ""}
                             {row.diferencia}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+
+            <Paper sx={{ p: 2, mb: 2 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 2,
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                }}
+              >
+                <Box>
+                  <Typography sx={{ fontWeight: "bold", fontSize: "1.2rem" }}>
+                    Lotes sobrevendidos
+                  </Typography>
+                  <Typography color="text.secondary">
+                    Para cada lote compara lo comprado contra lo vendido mas
+                    las salidas sin venta/transferencias. Como el inventario
+                    no puede bajar de 0, un lote sobrevendido queda en 0 en
+                    vez del negativo que le corresponderia, y esa diferencia
+                    es justamente lo que hace que el stock real del producto
+                    quede por encima de lo que predice el historial.
+                  </Typography>
+                  {isFetchedLotesSobrevendidos && (
+                    <Typography sx={{ mt: 1 }}>
+                      {lotesSobrevendidos?.totalLotesSobrevendidos || 0} lote(s)
+                      sobrevendido(s)
+                    </Typography>
+                  )}
+                </Box>
+                <Button
+                  variant="outlined"
+                  startIcon={
+                    isLoadingLotesSobrevendidos ? (
+                      <CircularProgress size={16} />
+                    ) : (
+                      <RefreshIcon />
+                    )
+                  }
+                  onClick={() => refetchLotesSobrevendidos()}
+                  disabled={loadingAction || isLoadingLotesSobrevendidos}
+                >
+                  {isFetchedLotesSobrevendidos
+                    ? "Verificar de nuevo"
+                    : "Verificar ahora"}
+                </Button>
+              </Box>
+            </Paper>
+
+            {isFetchedLotesSobrevendidos && (
+              <TableContainer component={Paper} sx={{ mb: 3 }}>
+                <Table size="small">
+                  <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
+                    <TableRow>
+                      <TableCell>Producto</TableCell>
+                      <TableCell>Lote</TableCell>
+                      <TableCell>Sucursal</TableCell>
+                      <TableCell align="right">Comprado</TableCell>
+                      <TableCell align="right">Vendido</TableCell>
+                      <TableCell align="right">Salida</TableCell>
+                      <TableCell align="right">Stock real</TableCell>
+                      <TableCell align="right">Sobreventa</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {lotesSobrevendidosList.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} align="center">
+                          No hay lotes sobrevendidos.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      lotesSobrevendidosList.map((row) => (
+                        <TableRow key={row.id_lote} hover>
+                          <TableCell sx={{ fontWeight: "bold" }}>
+                            {row.nombre}
+                          </TableCell>
+                          <TableCell>
+                            {row.numero_lote || row.id_lote}
+                          </TableCell>
+                          <TableCell>{row.sucursal}</TableCell>
+                          <TableCell align="right">{row.comprado}</TableCell>
+                          <TableCell align="right">{row.vendido}</TableCell>
+                          <TableCell align="right">{row.salida}</TableCell>
+                          <TableCell align="right">{row.stockReal}</TableCell>
+                          <TableCell
+                            align="right"
+                            sx={{ fontWeight: "bold", color: "#d32f2f" }}
+                          >
+                            +{row.sobreventa}
                           </TableCell>
                         </TableRow>
                       ))
