@@ -28,7 +28,7 @@ import ajustesStockService from "../../async/services/get/ajustesStockService";
 import ajustesDescuadreStockService from "../../async/services/get/ajustesDescuadreStockService";
 import ajustesSincronizarProductoService from "../../async/services/post/ajustesSincronizarProductoService";
 import ajustesSincronizarStockService from "../../async/services/post/ajustesSincronizarStockService";
-import ajustesLimpiarRegistrosVaciosService from "../../async/services/post/ajustesLimpiarRegistrosVaciosService";
+import ajustesRegistrosVaciosService from "../../async/services/get/ajustesRegistrosVaciosService";
 import sucursalesService from "../../async/services/get/sucursalesService";
 import sucursalAddService from "../../async/services/post/sucursalAddService";
 import sucursalTransferirService from "../../async/services/post/sucursalTransferirService";
@@ -93,6 +93,14 @@ function Ajustes() {
     enabled: false,
   });
   const {
+    data: registrosVacios,
+    isLoading: isLoadingRegistrosVacios,
+    isFetched: isFetchedRegistrosVacios,
+    refetch: refetchRegistrosVacios,
+  } = useQuery("ajustes-registros-vacios", ajustesRegistrosVaciosService, {
+    enabled: false,
+  });
+  const {
     data: inventarioOrigen = [],
     isLoading: loadingInventarioOrigen,
     refetch: refetchInventarioOrigen,
@@ -148,31 +156,6 @@ function Ajustes() {
       });
     },
   });
-
-  const limpiarRegistrosVaciosMutation = useMutation(
-    ajustesLimpiarRegistrosVaciosService,
-    {
-      onSuccess: (response) => {
-        setSnackbar({
-          open: true,
-          message:
-            response?.message ||
-            "Mantenimiento de inventario ejecutado correctamente.",
-          severity: "success",
-        });
-        refetch();
-      },
-      onError: (err) => {
-        setSnackbar({
-          open: true,
-          message: `No se pudo ejecutar el mantenimiento: ${
-            err?.message || err || "Intente nuevamente."
-          }`,
-          severity: "error",
-        });
-      },
-    }
-  );
 
   const crearSucursalMutation = useMutation(sucursalAddService, {
     onSuccess: () => {
@@ -293,6 +276,8 @@ function Ajustes() {
 
   const diferencias = stockComparacion?.diferencias || [];
   const descuadresPorSucursal = descuadreStock?.diferencias || [];
+  const inventariosVaciosList = registrosVacios?.inventariosVacios || [];
+  const lotesVaciosBorrablesList = registrosVacios?.lotesVaciosBorrables || [];
   const inventariosHuerfanos = data?.huerfanos?.huerfanos || [];
   const inventariosNegativos = data?.negativos?.inventarios || [];
   const comprasDuplicadas = data?.comprasDuplicadas?.duplicadas || [];
@@ -334,7 +319,6 @@ function Ajustes() {
     actualizarSucursalMutation.isLoading ||
     marcarPrincipalMutation.isLoading ||
     eliminarSucursalMutation.isLoading ||
-    limpiarRegistrosVaciosMutation.isLoading ||
     isLoadingMantenimiento;
 
   const handleCrearSucursal = () => {
@@ -398,44 +382,6 @@ function Ajustes() {
           Ajustes y auditoria
         </Typography>
 
-        {isLoading && (
-          <Paper sx={{ p: 2, mb: 3 }}>
-            <Box
-              sx={{
-                display: "flex",
-                gap: 2,
-                justifyContent: "space-between",
-                flexWrap: "wrap",
-                alignItems: "center",
-              }}
-            >
-              <Box>
-                <Typography sx={{ fontWeight: "bold", fontSize: "1.2rem" }}>
-                  Mantenimiento de rendimiento
-                </Typography>
-                <Typography color="text.secondary">
-                  Elimina inventarios en cero y lotes vacios sin ventas
-                  asociadas para reducir registros que frenan las consultas.
-                </Typography>
-                <Typography variant="body2" sx={{ mt: 1 }}>
-                  {mantenimiento.inventariosVacios || 0} inventario(s) vacio(s)
-                  {" | "}
-                  {mantenimiento.lotesVaciosBorrables || 0} lote(s) borrable(s)
-                </Typography>
-              </Box>
-              <Button
-                variant="contained"
-                color="error"
-                startIcon={<CleaningServicesIcon />}
-                onClick={() => limpiarRegistrosVaciosMutation.mutate()}
-                disabled={loadingAction || totalRegistrosVacios === 0}
-              >
-                Limpiar registros vacios
-              </Button>
-            </Box>
-          </Paper>
-        )}
-
         {isLoading ? (
           <Paper sx={{ p: 3, textAlign: "center" }}>
             <CircularProgress />
@@ -488,11 +434,15 @@ function Ajustes() {
               >
                 <Box>
                   <Typography sx={{ fontWeight: "bold", fontSize: "1.2rem" }}>
-                    Mantenimiento de rendimiento
+                    Registros vacios (revision manual)
                   </Typography>
                   <Typography color="text.secondary">
-                    Elimina inventarios en cero y lotes vacios sin ventas
-                    asociadas para reducir registros que frenan las consultas.
+                    Lista inventarios en cero y lotes vacios sin ventas
+                    asociadas. Ya no se eliminan automaticamente: si un
+                    registro tiene un movimiento de inventario asociado (ej.
+                    &quot;Salida sin venta&quot;), borrarlo destruye la unica
+                    evidencia de ese movimiento y puede producir descuadres
+                    invisibles.
                   </Typography>
                   <Typography variant="body2" sx={{ mt: 1 }}>
                     {mantenimiento.inventariosVacios || 0} inventario(s) vacio(s)
@@ -501,16 +451,88 @@ function Ajustes() {
                   </Typography>
                 </Box>
                 <Button
-                  variant="contained"
-                  color="error"
-                  startIcon={<CleaningServicesIcon />}
-                  onClick={() => limpiarRegistrosVaciosMutation.mutate()}
+                  variant="outlined"
+                  startIcon={
+                    isLoadingRegistrosVacios ? (
+                      <CircularProgress size={16} />
+                    ) : (
+                      <CleaningServicesIcon />
+                    )
+                  }
+                  onClick={() => refetchRegistrosVacios()}
                   disabled={loadingAction || totalRegistrosVacios === 0}
                 >
-                  Limpiar registros vacios
+                  {isFetchedRegistrosVacios ? "Revisar de nuevo" : "Ver candidatos"}
                 </Button>
               </Box>
             </Paper>
+
+            {isFetchedRegistrosVacios && (
+              <TableContainer component={Paper} sx={{ mb: 3 }}>
+                <Table size="small">
+                  <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
+                    <TableRow>
+                      <TableCell>Tipo</TableCell>
+                      <TableCell>Producto</TableCell>
+                      <TableCell>Lote</TableCell>
+                      <TableCell>Sucursal</TableCell>
+                      <TableCell>Tiene movimiento asociado</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {inventariosVaciosList.length === 0 &&
+                    lotesVaciosBorrablesList.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} align="center">
+                          No hay registros vacios pendientes de revision.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      <>
+                        {inventariosVaciosList.map((row) => (
+                          <TableRow key={`inv-${row.id_inventario}`} hover>
+                            <TableCell>Inventario</TableCell>
+                            <TableCell>{row.producto}</TableCell>
+                            <TableCell>
+                              {row.numero_lote || row.id_lote || "N/A"}
+                            </TableCell>
+                            <TableCell>{row.sucursal || "N/A"}</TableCell>
+                            <TableCell>
+                              {row.tieneMovimientoAsociado ? (
+                                <strong style={{ color: "#d32f2f" }}>
+                                  Si - no borrar sin revisar
+                                </strong>
+                              ) : (
+                                "No"
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {lotesVaciosBorrablesList.map((row) => (
+                          <TableRow key={`lote-${row.id_lote}`} hover>
+                            <TableCell>Lote</TableCell>
+                            <TableCell>{row.producto}</TableCell>
+                            <TableCell>
+                              {row.numero_lote || row.id_lote}
+                            </TableCell>
+                            <TableCell>—</TableCell>
+                            <TableCell>
+                              {row.tieneMovimientoAsociado ? (
+                                <strong style={{ color: "#d32f2f" }}>
+                                  Si - no borrar sin revisar
+                                </strong>
+                              ) : (
+                                "No"
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
 
             <Paper sx={{ p: 2, mb: 3 }}>
               <Typography sx={{ fontWeight: "bold", fontSize: "1.2rem" }}>
