@@ -25,6 +25,7 @@ import { useMutation, useQuery } from "react-query";
 import ajustesResumenService from "../../async/services/get/ajustesResumenService";
 import ajustesMantenimientoService from "../../async/services/get/ajustesMantenimientoService";
 import ajustesStockService from "../../async/services/get/ajustesStockService";
+import ajustesDescuadreStockService from "../../async/services/get/ajustesDescuadreStockService";
 import ajustesSincronizarProductoService from "../../async/services/post/ajustesSincronizarProductoService";
 import ajustesSincronizarStockService from "../../async/services/post/ajustesSincronizarStockService";
 import ajustesLimpiarRegistrosVaciosService from "../../async/services/post/ajustesLimpiarRegistrosVaciosService";
@@ -81,6 +82,14 @@ function Ajustes() {
     isFetched: isFetchedStockComparacion,
     refetch: refetchStockComparacion,
   } = useQuery("ajustes-stock-comparacion", ajustesStockService, {
+    enabled: false,
+  });
+  const {
+    data: descuadreStock,
+    isLoading: isLoadingDescuadreStock,
+    isFetched: isFetchedDescuadreStock,
+    refetch: refetchDescuadreStock,
+  } = useQuery("ajustes-descuadre-stock", ajustesDescuadreStockService, {
     enabled: false,
   });
   const {
@@ -283,6 +292,7 @@ function Ajustes() {
   };
 
   const diferencias = stockComparacion?.diferencias || [];
+  const descuadresPorSucursal = descuadreStock?.diferencias || [];
   const inventariosHuerfanos = data?.huerfanos?.huerfanos || [];
   const inventariosNegativos = data?.negativos?.inventarios || [];
   const comprasDuplicadas = data?.comprasDuplicadas?.duplicadas || [];
@@ -949,6 +959,116 @@ function Ajustes() {
                             >
                               Sincronizar
                             </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+
+            <Paper sx={{ p: 2, mb: 2 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 2,
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                }}
+              >
+                <Box>
+                  <Typography sx={{ fontWeight: "bold", fontSize: "1.2rem" }}>
+                    Descuadre de stock real (por sucursal y lote)
+                  </Typography>
+                  <Typography color="text.secondary">
+                    Compara, producto por producto y SUCURSAL por sucursal, el
+                    inventario real contra lo que deberia haber segun compras,
+                    ventas, salidas y transferencias registradas. Esto detecta
+                    problemas que la comparacion de arriba (que solo mira el
+                    total del producto) puede no mostrar, porque un lote puede
+                    estar mal aunque el total se compense con otra sucursal.
+                    No corrige nada automaticamente — revisa cada caso antes
+                    de hacer un ajuste manual.
+                  </Typography>
+                  {isFetchedDescuadreStock && (
+                    <Typography sx={{ mt: 1 }}>
+                      {descuadreStock?.totalFilasRevisadas || 0} combinacion(es)
+                      producto/sucursal revisada(s),{" "}
+                      <strong
+                        style={{
+                          color:
+                            (descuadreStock?.totalConDiferencia || 0) > 0
+                              ? "#d32f2f"
+                              : "#2e7d32",
+                        }}
+                      >
+                        {descuadreStock?.totalConDiferencia || 0} con diferencia
+                      </strong>
+                    </Typography>
+                  )}
+                </Box>
+                <Button
+                  variant="outlined"
+                  startIcon={
+                    isLoadingDescuadreStock ? (
+                      <CircularProgress size={16} />
+                    ) : (
+                      <RefreshIcon />
+                    )
+                  }
+                  onClick={() => refetchDescuadreStock()}
+                  disabled={loadingAction || isLoadingDescuadreStock}
+                >
+                  {isFetchedDescuadreStock ? "Verificar de nuevo" : "Verificar ahora"}
+                </Button>
+              </Box>
+            </Paper>
+
+            {isFetchedDescuadreStock && (
+              <TableContainer component={Paper} sx={{ mb: 3 }}>
+                <Table>
+                  <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
+                    <TableRow>
+                      <TableCell>Producto</TableCell>
+                      <TableCell>Codigo</TableCell>
+                      <TableCell>Sucursal</TableCell>
+                      <TableCell align="right">Stock real</TableCell>
+                      <TableCell align="right">Stock esperado</TableCell>
+                      <TableCell align="right">Diferencia</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {descuadresPorSucursal.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} align="center">
+                          No hay diferencias entre el stock real y lo esperado
+                          segun el historial.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      descuadresPorSucursal.map((row) => (
+                        <TableRow
+                          key={`${row.id_producto}-${row.id_sucursal}`}
+                          hover
+                        >
+                          <TableCell sx={{ fontWeight: "bold" }}>
+                            {row.nombre}
+                          </TableCell>
+                          <TableCell>{row.codigo_barra || "N/A"}</TableCell>
+                          <TableCell>{row.sucursal}</TableCell>
+                          <TableCell align="right">{row.stockReal}</TableCell>
+                          <TableCell align="right">{row.stockEsperado}</TableCell>
+                          <TableCell
+                            align="right"
+                            sx={{
+                              fontWeight: "bold",
+                              color: row.diferencia > 0 ? "#d32f2f" : "#ed6c02",
+                            }}
+                          >
+                            {row.diferencia > 0 ? "+" : ""}
+                            {row.diferencia}
                           </TableCell>
                         </TableRow>
                       ))
