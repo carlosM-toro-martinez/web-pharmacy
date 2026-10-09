@@ -30,6 +30,9 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { useContext } from "react";
 import { MainContext } from "../../context/MainContext";
+import CircularProgress from "@mui/material/CircularProgress";
+import reportPreciosProductosService from "../../async/services/get/reportPreciosProductosService";
+import generarExcelPreciosProductos from "./generarExcelPreciosProductos";
 
 const ITEM_HEIGHT = 48;
 
@@ -55,6 +58,7 @@ export default function TableProductsComponent({
 
   const [openProductoModal, setOpenProductoModal] = useState(false);
   const [showMissingOnly, setShowMissingOnly] = useState(false);
+  const [generandoExcelPrecios, setGenerandoExcelPrecios] = useState(false);
 
   const handleOpenProductoModal = () => setOpenProductoModal(true);
   const handleCloseProductoModal = () => setOpenProductoModal(false);
@@ -203,6 +207,18 @@ export default function TableProductsComponent({
 
     const data = new Blob([excelBuffer], { type: "application/octet-stream" });
     saveAs(data, "productos.xlsx");
+  };
+
+  const handleExportPreciosToExcel = async () => {
+    setGenerandoExcelPrecios(true);
+    try {
+      const reporte = await reportPreciosProductosService();
+      await generarExcelPreciosProductos(reporte);
+    } catch (error) {
+      console.error("Error al generar el reporte de precios:", error);
+    } finally {
+      setGenerandoExcelPrecios(false);
+    }
   };
 
   return (
@@ -361,9 +377,26 @@ export default function TableProductsComponent({
           labelRowsPerPage="Filas por página"
         />
       </Paper>
-      <Button variant="outlined" color="success" onClick={handleExportToExcel}>
-        Descargar Excel
-      </Button>
+      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+        <Button variant="outlined" color="success" onClick={handleExportToExcel}>
+          Descargar Excel
+        </Button>
+        <Button
+          variant="outlined"
+          color="success"
+          onClick={handleExportPreciosToExcel}
+          disabled={generandoExcelPrecios}
+          startIcon={
+            generandoExcelPrecios ? (
+              <CircularProgress size={16} color="inherit" />
+            ) : null
+          }
+        >
+          {generandoExcelPrecios
+            ? "Generando..."
+            : "Excel: precios de compra y venta (todas las sucursales)"}
+        </Button>
+      </Box>
 
       {openUpdateModal && (
         <ModalUpdateProduct
