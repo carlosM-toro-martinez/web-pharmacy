@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useQuery } from "react-query";
 import {
   Alert,
   Box,
   Button,
   ButtonGroup,
+  Chip,
   CircularProgress,
   MenuItem,
   Paper,
@@ -16,6 +17,8 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import DrawerComponent from "../../DrawerComponent";
 import sucursalesService from "../../../async/services/get/sucursalesService";
 import reportVentasService from "../../../async/services/get/reportVentasService.js";
+import inventarioService from "../../../async/services/get/inventarioService.js";
+import ProductoAutocompleteComponent from "../../DashboardVentaComponent/VentaForm/ProductoAutocompleteComponent";
 import TableVentasReport from "./TableVentasReport";
 import VentasResumeTable from "./VentasResumeTable";
 
@@ -37,13 +40,14 @@ const initialFilters = {
   desde: haceNDias(7),
   hasta: hoy(),
   id_sucursal: "",
-  producto: "",
+  id_producto: "",
 };
 
 function ReportVentasComponent() {
   const [filters, setFilters] = useState(initialFilters);
   const [appliedFilters, setAppliedFilters] = useState(initialFilters);
   const [modoResumen, setModoResumen] = useState("ventas");
+  const [productoSeleccionado, setProductoSeleccionado] = useState(null);
 
   const { data: sucursales = [] } = useQuery("sucursales", sucursalesService);
   const {
@@ -54,11 +58,50 @@ function ReportVentasComponent() {
     reportVentasService(appliedFilters)
   );
 
+  // Mismo autocomplete (y mismo endpoint) que se usa para elegir el
+  // producto al hacer una venta, en vez de un buscador de texto aparte.
+  const { data: productosInventario = [] } = useQuery(
+    ["inventario-para-buscar-ventas", filters.id_sucursal],
+    () => inventarioService(filters.id_sucursal || null)
+  );
+
+  const productosConTotales = useMemo(() => {
+    const porProducto = new Map();
+    for (const producto of productosInventario) {
+      if (porProducto.has(producto.id_producto)) continue;
+      const inventarios = producto.inventarios || [];
+      const totalSubCantidad = inventarios.reduce(
+        (total, inv) => total + (Number(inv.subCantidad) || 0),
+        0
+      );
+      porProducto.set(producto.id_producto, {
+        ...producto,
+        inventarios,
+        totalSubCantidad,
+      });
+    }
+    return Array.from(porProducto.values());
+  }, [productosInventario]);
+
   const handleChange = (event) => {
     setFilters((previous) => ({
       ...previous,
       [event.target.name]: event.target.value,
     }));
+  };
+
+  const handleProductoChange = (idProducto, producto) => {
+    setProductoSeleccionado(producto || null);
+    const combinado = { ...filters, id_producto: idProducto };
+    setFilters(combinado);
+    setAppliedFilters(combinado);
+  };
+
+  const handleQuitarProducto = () => {
+    setProductoSeleccionado(null);
+    const combinado = { ...filters, id_producto: "" };
+    setFilters(combinado);
+    setAppliedFilters(combinado);
   };
 
   const handleSearch = (event) => {
@@ -124,15 +167,15 @@ function ReportVentasComponent() {
                 </MenuItem>
               ))}
             </TextField>
-            <TextField
-              name="producto"
-              label="Buscar producto"
-              placeholder="Nombre o codigo de barra"
-              value={filters.producto}
-              onChange={handleChange}
-              size="small"
-              sx={{ minWidth: 220 }}
-            />
+            <Box sx={{ minWidth: 260 }}>
+              <ProductoAutocompleteComponent
+                productosUnicosFiltrados={productosConTotales}
+                productosConTotales={productosConTotales}
+                handleProductoChange={handleProductoChange}
+                setCantidad={() => {}}
+                setCantidadPorUnidad={() => {}}
+              />
+            </Box>
             <Button type="submit" variant="contained" startIcon={<RefreshIcon />}>
               Buscar
             </Button>
@@ -165,6 +208,16 @@ function ReportVentasComponent() {
               Todo el historial
             </Button>
           </Stack>
+          {productoSeleccionado && (
+            <Box sx={{ mt: 2 }}>
+              <Chip
+                label={`Producto: ${productoSeleccionado.nombre}`}
+                onDelete={handleQuitarProducto}
+                color="primary"
+                variant="outlined"
+              />
+            </Box>
+          )}
         </Paper>
 
         <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
