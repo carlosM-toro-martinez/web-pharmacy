@@ -3,6 +3,7 @@ import DrawerComponent from "../../DrawerComponent";
 import { formatLapazDate } from "../../../utils/dateUtils";
 import { useQuery } from "react-query";
 import {
+  Alert,
   Box,
   Typography,
   FormControl,
@@ -15,14 +16,70 @@ import {
   Card,
   CardContent,
   Divider,
+  Paper,
+  TextField,
 } from "@mui/material";
+import DownloadIcon from "@mui/icons-material/Download";
 import trabajadoresService from "../../../async/services/get/trabajadoresService";
 import getTrabajadorByIdService from "../../../async/services/get/getTrabajadorByIdService";
+import sucursalesService from "../../../async/services/get/sucursalesService";
+import reportVentasPorTrabajadorService from "../../../async/services/get/reportVentasPorTrabajadorService";
+import generarExcelVentasPorTrabajador from "./generarExcelVentasPorTrabajador";
+
+const haceNDias = (n) => {
+  const fecha = new Date();
+  fecha.setDate(fecha.getDate() - n);
+  return fecha.toISOString().slice(0, 10);
+};
+
+const primerDiaDelMes = () => {
+  const fecha = new Date();
+  fecha.setDate(1);
+  return fecha.toISOString().slice(0, 10);
+};
+
+const hoy = () => new Date().toISOString().slice(0, 10);
 
 function ReportWorkersComponent() {
   const { data, isLoading } = useQuery("workers", trabajadoresService);
   const [selectedWorker, setSelectedWorker] = useState("");
   const [activeSection, setActiveSection] = useState("");
+
+  const { data: sucursales = [] } = useQuery("sucursales", sucursalesService);
+  const [excelFilters, setExcelFilters] = useState({
+    desde: primerDiaDelMes(),
+    hasta: hoy(),
+    id_sucursal: "",
+  });
+  const [generandoExcel, setGenerandoExcel] = useState(false);
+  const [errorExcel, setErrorExcel] = useState("");
+
+  const handleExcelFilterChange = (event) => {
+    setErrorExcel("");
+    setExcelFilters((previous) => ({
+      ...previous,
+      [event.target.name]: event.target.value,
+    }));
+  };
+
+  const handleDescargarExcel = async () => {
+    setGenerandoExcel(true);
+    setErrorExcel("");
+    try {
+      const reporte = await reportVentasPorTrabajadorService(excelFilters);
+      if (!reporte.trabajadores?.length) {
+        setErrorExcel("No hay ventas registradas en el rango seleccionado.");
+        return;
+      }
+      await generarExcelVentasPorTrabajador(reporte);
+    } catch (error) {
+      setErrorExcel(
+        `No se pudo generar el Excel: ${error?.message || "Intente nuevamente."}`
+      );
+    } finally {
+      setGenerandoExcel(false);
+    }
+  };
 
   const {
     data: trabajadorSeleccionado,
@@ -133,6 +190,107 @@ function ReportWorkersComponent() {
         <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold" }}>
           Reporte de Trabajadores
         </Typography>
+
+        <Paper sx={{ p: 2, mb: 4, width: "100%", maxWidth: 800 }}>
+          <Typography sx={{ fontWeight: "bold", mb: 1 }}>
+            Exportar ventas por trabajador (Excel)
+          </Typography>
+          <Typography color="text.secondary" sx={{ mb: 2 }}>
+            Descarga un Excel con todas las ventas de cada trabajador en el
+            rango de fechas elegido, con el total por trabajador y el total
+            general.
+          </Typography>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={2}
+            alignItems={{ sm: "flex-end" }}
+            flexWrap="wrap"
+            useFlexGap
+          >
+            <TextField
+              name="desde"
+              label="Desde"
+              type="date"
+              value={excelFilters.desde}
+              onChange={handleExcelFilterChange}
+              InputLabelProps={{ shrink: true }}
+              size="small"
+            />
+            <TextField
+              name="hasta"
+              label="Hasta"
+              type="date"
+              value={excelFilters.hasta}
+              onChange={handleExcelFilterChange}
+              InputLabelProps={{ shrink: true }}
+              size="small"
+            />
+            <TextField
+              select
+              name="id_sucursal"
+              label="Sucursal"
+              value={excelFilters.id_sucursal}
+              onChange={handleExcelFilterChange}
+              size="small"
+              sx={{ minWidth: 190 }}
+            >
+              <MenuItem value="">Todas</MenuItem>
+              {sucursales.map((sucursal) => (
+                <MenuItem key={sucursal.id_sucursal} value={sucursal.id_sucursal}>
+                  {sucursal.nombre}
+                </MenuItem>
+              ))}
+            </TextField>
+            <Button
+              variant="outlined"
+              onClick={() =>
+                setExcelFilters((prev) => ({ ...prev, desde: hoy(), hasta: hoy() }))
+              }
+            >
+              Hoy
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() =>
+                setExcelFilters((prev) => ({
+                  ...prev,
+                  desde: haceNDias(7),
+                  hasta: hoy(),
+                }))
+              }
+            >
+              Última semana
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() =>
+                setExcelFilters((prev) => ({
+                  ...prev,
+                  desde: primerDiaDelMes(),
+                  hasta: hoy(),
+                }))
+              }
+            >
+              Este mes
+            </Button>
+            <Button
+              variant="contained"
+              color="success"
+              startIcon={
+                generandoExcel ? <CircularProgress size={16} color="inherit" /> : <DownloadIcon />
+              }
+              onClick={handleDescargarExcel}
+              disabled={generandoExcel}
+            >
+              {generandoExcel ? "Generando..." : "Descargar Excel"}
+            </Button>
+          </Stack>
+          {errorExcel && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {errorExcel}
+            </Alert>
+          )}
+        </Paper>
 
         {isLoading ? (
           <CircularProgress />
