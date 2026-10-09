@@ -7,7 +7,7 @@ const NARANJA = "FFFF4500";
 const BLANCO = "FFFFFFFF";
 const bordeFino = { style: "thin", color: { argb: "FFE0E0E0" } };
 
-export async function generarExcelVentasDuplicadas(reporte) {
+export async function generarExcelVentasDuplicadas(reporte, filtrosTexto = "") {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "Encuentra! Software Solutions";
   workbook.created = new Date();
@@ -39,7 +39,9 @@ export async function generarExcelVentasDuplicadas(reporte) {
   titulo.font = { size: 15, bold: true };
   ws.mergeCells("B2:K2");
   const subtitulo = ws.getCell("B2");
-  subtitulo.value = `Generado el ${formatLapazDate(new Date(), "datetime")}  •  ${reporte.totalProductosAfectados} producto(s)/sucursal con faltante real pendiente  •  ${reporte.totalUnidadesDescontadasDeMas} unidad(es) en total (ya descuenta otras salidas/compras posteriores)`;
+  subtitulo.value = `Generado el ${formatLapazDate(new Date(), "datetime")}${
+    filtrosTexto ? `  •  Filtros: ${filtrosTexto}` : ""
+  }  •  ${reporte.totalProductosAfectados} producto(s)/sucursal con faltante real pendiente  •  ${reporte.totalUnidadesDescontadasDeMas} unidad(es) en total (ya descuenta otras salidas/compras posteriores)`;
   subtitulo.font = { size: 10, italic: true, color: { argb: "FF666666" } };
   ws.getRow(1).height = 24;
   ws.getRow(2).height = 18;

@@ -118,19 +118,40 @@ function Ajustes() {
     enabled: false,
   });
   const [anioVentasDuplicadas, setAnioVentasDuplicadas] = useState("");
+  const [sucursalVentasDuplicadas, setSucursalVentasDuplicadas] = useState("");
   const {
     data: ventasDuplicadas,
     isLoading: isLoadingVentasDuplicadas,
     refetch: refetchVentasDuplicadas,
-  } = useQuery(["ajustes-ventas-duplicadas", anioVentasDuplicadas], () =>
-    ajustesVentasDuplicadasService({ anio: anioVentasDuplicadas })
+  } = useQuery(
+    [
+      "ajustes-ventas-duplicadas",
+      anioVentasDuplicadas,
+      sucursalVentasDuplicadas,
+    ],
+    () =>
+      ajustesVentasDuplicadasService({
+        anio: anioVentasDuplicadas,
+        id_sucursal: sucursalVentasDuplicadas,
+      })
   );
   const [descargandoExcelDuplicadas, setDescargandoExcelDuplicadas] = useState(false);
   const handleDescargarExcelDuplicadas = async () => {
     if (!ventasDuplicadas?.productos?.length) return;
     setDescargandoExcelDuplicadas(true);
     try {
-      await generarExcelVentasDuplicadas(ventasDuplicadas);
+      const partesFiltro = [];
+      if (anioVentasDuplicadas) partesFiltro.push(`Año ${anioVentasDuplicadas}`);
+      if (sucursalVentasDuplicadas) {
+        const sucursalElegida = sucursales.find(
+          (s) => String(s.id_sucursal) === String(sucursalVentasDuplicadas)
+        );
+        partesFiltro.push(`Sucursal ${sucursalElegida?.nombre || sucursalVentasDuplicadas}`);
+      }
+      await generarExcelVentasDuplicadas(
+        ventasDuplicadas,
+        partesFiltro.join(", ")
+      );
     } finally {
       setDescargandoExcelDuplicadas(false);
     }
@@ -522,6 +543,21 @@ function Ajustes() {
                 {(ventasDuplicadas?.aniosDisponibles || []).map((anio) => (
                   <MenuItem key={anio} value={anio}>
                     {anio}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                select
+                label="Sucursal"
+                size="small"
+                value={sucursalVentasDuplicadas}
+                onChange={(e) => setSucursalVentasDuplicadas(e.target.value)}
+                sx={{ minWidth: 190 }}
+              >
+                <MenuItem value="">Todas</MenuItem>
+                {sucursales.map((sucursal) => (
+                  <MenuItem key={sucursal.id_sucursal} value={sucursal.id_sucursal}>
+                    {sucursal.nombre}
                   </MenuItem>
                 ))}
               </TextField>
