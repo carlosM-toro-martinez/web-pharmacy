@@ -32,7 +32,9 @@ import ajustesSincronizarProductoService from "../../async/services/post/ajustes
 import ajustesSincronizarStockService from "../../async/services/post/ajustesSincronizarStockService";
 import ajustesRegistrosVaciosService from "../../async/services/get/ajustesRegistrosVaciosService";
 import ajustesVentasDuplicadasService from "../../async/services/get/ajustesVentasDuplicadasService";
+import ajustesCorregirVentasDuplicadasService from "../../async/services/post/ajustesCorregirVentasDuplicadasService";
 import generarExcelVentasDuplicadas from "./generarExcelVentasDuplicadas";
+import BuildCircleIcon from "@mui/icons-material/BuildCircle";
 import DownloadIcon from "@mui/icons-material/Download";
 import sucursalesService from "../../async/services/get/sucursalesService";
 import sucursalAddService from "../../async/services/post/sucursalAddService";
@@ -132,6 +134,55 @@ function Ajustes() {
     } finally {
       setDescargandoExcelDuplicadas(false);
     }
+  };
+
+  const [corrigiendoClave, setCorrigiendoClave] = useState(null);
+  const corregirVentasDuplicadasMutation = useMutation(
+    ajustesCorregirVentasDuplicadasService,
+    {
+      onSuccess: (resultado) => {
+        setSnackbar({
+          open: true,
+          message: `${resultado.totalCorregidos} producto(s) corregido(s)${
+            resultado.totalOmitidos
+              ? `, ${resultado.totalOmitidos} ya no tenian nada pendiente`
+              : ""
+          }${
+            resultado.totalErrores
+              ? `, ${resultado.totalErrores} con error (revisar logs)`
+              : ""
+          }.`,
+          severity: resultado.totalErrores ? "warning" : "success",
+        });
+        setCorrigiendoClave(null);
+        refetchVentasDuplicadas();
+      },
+      onError: (err) => {
+        setCorrigiendoClave(null);
+        setSnackbar({
+          open: true,
+          message: `No se pudo corregir: ${err?.message || "Intente nuevamente."}`,
+          severity: "error",
+        });
+      },
+    }
+  );
+
+  const handleCorregirUno = (producto) => {
+    setCorrigiendoClave(`${producto.id_producto}-${producto.id_sucursal}`);
+    corregirVentasDuplicadasMutation.mutate([
+      { id_producto: producto.id_producto, id_sucursal: producto.id_sucursal },
+    ]);
+  };
+
+  const handleCorregirTodos = () => {
+    if (!productosDuplicadosList.length) return;
+    const confirmado = window.confirm(
+      `Esto va a sumar el faltante de ${productosDuplicadosList.length} producto(s) directamente a su compra mas reciente (y su lote/inventario), sin crear ningun movimiento nuevo visible. ¿Continuar?`
+    );
+    if (!confirmado) return;
+    setCorrigiendoClave("todos");
+    corregirVentasDuplicadasMutation.mutate([]);
   };
   const {
     data: inventarioOrigen = [],
@@ -503,6 +554,23 @@ function Ajustes() {
               >
                 Descargar Excel
               </Button>
+              <Button
+                variant="contained"
+                color="success"
+                startIcon={
+                  corrigiendoClave === "todos" ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    <BuildCircleIcon />
+                  )
+                }
+                onClick={handleCorregirTodos}
+                disabled={
+                  !!corrigiendoClave || !productosDuplicadosList.length
+                }
+              >
+                Corregir todos
+              </Button>
             </Stack>
           </Box>
         </Paper>
@@ -526,41 +594,63 @@ function Ajustes() {
                   <TableCell align="right">Faltante real pendiente</TableCell>
                   <TableCell align="right">Stock sugerido</TableCell>
                   <TableCell>Ultima venta duplicada</TableCell>
+                  <TableCell align="center">Accion</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {productosDuplicadosList.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} align="center">
+                    <TableCell colSpan={11} align="center">
                       No hay productos con ventas duplicadas detectadas.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  productosDuplicadosList.map((p) => (
-                    <TableRow key={`${p.id_producto}-${p.id_sucursal}`} hover>
-                      <TableCell sx={{ fontWeight: "bold" }}>{p.nombre}</TableCell>
-                      <TableCell>{p.codigo_barra || "N/A"}</TableCell>
-                      <TableCell>{p.forma_farmaceutica || "N/A"}</TableCell>
-                      <TableCell>{p.concentracion || "N/A"}</TableCell>
-                      <TableCell>{p.proveedor || "N/A"}</TableCell>
-                      <TableCell>{p.sucursal}</TableCell>
-                      <TableCell align="right">{p.stockReal}</TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{ fontWeight: "bold", color: "#d32f2f" }}
-                      >
-                        +{p.faltanteReal}
-                      </TableCell>
-                      <TableCell align="right" sx={{ fontWeight: "bold" }}>
-                        {p.stockSugerido}
-                      </TableCell>
-                      <TableCell>
-                        {p.fechaMasReciente
-                          ? new Date(p.fechaMasReciente).toLocaleDateString("es-BO")
-                          : "N/A"}
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  productosDuplicadosList.map((p) => {
+                    const clave = `${p.id_producto}-${p.id_sucursal}`;
+                    return (
+                      <TableRow key={clave} hover>
+                        <TableCell sx={{ fontWeight: "bold" }}>{p.nombre}</TableCell>
+                        <TableCell>{p.codigo_barra || "N/A"}</TableCell>
+                        <TableCell>{p.forma_farmaceutica || "N/A"}</TableCell>
+                        <TableCell>{p.concentracion || "N/A"}</TableCell>
+                        <TableCell>{p.proveedor || "N/A"}</TableCell>
+                        <TableCell>{p.sucursal}</TableCell>
+                        <TableCell align="right">{p.stockReal}</TableCell>
+                        <TableCell
+                          align="right"
+                          sx={{ fontWeight: "bold", color: "#d32f2f" }}
+                        >
+                          +{p.faltanteReal}
+                        </TableCell>
+                        <TableCell align="right" sx={{ fontWeight: "bold" }}>
+                          {p.stockSugerido}
+                        </TableCell>
+                        <TableCell>
+                          {p.fechaMasReciente
+                            ? new Date(p.fechaMasReciente).toLocaleDateString("es-BO")
+                            : "N/A"}
+                        </TableCell>
+                        <TableCell align="center">
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="success"
+                            startIcon={
+                              corrigiendoClave === clave ? (
+                                <CircularProgress size={14} />
+                              ) : (
+                                <BuildCircleIcon fontSize="small" />
+                              )
+                            }
+                            onClick={() => handleCorregirUno(p)}
+                            disabled={!!corrigiendoClave}
+                          >
+                            Corregir
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
