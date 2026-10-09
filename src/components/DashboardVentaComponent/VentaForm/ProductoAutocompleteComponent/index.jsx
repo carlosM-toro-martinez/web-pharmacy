@@ -67,6 +67,12 @@ const ProductoAutocompleteComponent = ({
     setInputValue(newInputValue);
   };
 
+  // Guarda el ultimo codigo agregado por Enter y cuando, para no procesar
+  // el mismo escaneo dos veces: algunos lectores de codigo de barras mandan
+  // CR+LF como terminador, y el navegador entrega eso como dos eventos
+  // "Enter" casi seguidos para la misma lectura.
+  const ultimoEscaneoRef = useRef({ codigo: null, ts: 0 });
+
   const handleKeyDown = (event) => {
     if (event.key === "Enter") {
       const matchedProduct = productosUnicosFiltrados.find(
@@ -76,6 +82,25 @@ const ProductoAutocompleteComponent = ({
       );
 
       if (matchedProduct) {
+        // Autocomplete de MUI tiene su propio manejo de Enter en el <div>
+        // que envuelve este input (selecciona la opcion resaltada si el
+        // listbox esta abierto). Sin esto, un solo Enter puede terminar
+        // agregando el producto dos veces: una vez aqui (por codigo de
+        // barra) y otra al burbujear hasta el Autocomplete, que dispara su
+        // propio onChange.
+        event.preventDefault();
+        event.stopPropagation();
+
+        const ahora = Date.now();
+        const esRepetido =
+          ultimoEscaneoRef.current.codigo === matchedProduct.codigo_barra &&
+          ahora - ultimoEscaneoRef.current.ts < 400;
+        ultimoEscaneoRef.current = {
+          codigo: matchedProduct.codigo_barra,
+          ts: ahora,
+        };
+        if (esRepetido) return;
+
         handleProductoChange(matchedProduct.id_producto, matchedProduct);
         setCantidad();
         setCantidadPorUnidad();
