@@ -200,16 +200,15 @@ const RegisterBuyComponent = ({
       return;
     }
 
-    const seen = new Set();
-    const filteredRegistro = registroCombinado.filter((item) => {
-      if (seen.has(item.id_producto)) {
-        return false;
-      }
-      seen.add(item.id_producto);
-      return true;
-    });
+    // El backend ya descarta duplicados reales (mismo producto + mismo
+    // numero_lote, en createDetalleCompraYLoteAndUpdateProduct). Filtrar
+    // aqui solo por id_producto estaba borrando en silencio una segunda
+    // linea legitima del mismo producto con OTRO lote (una factura trae
+    // dos lotes/vencimientos distintos de un mismo medicamento), sin
+    // avisar al usuario — la fila seguia viendose en la tabla, pero nunca
+    // se guardaba.
     setLoadingBuy(true);
-    const transformedArray = filteredRegistro.map((item) => ({
+    const transformedArray = registroCombinado.map((item) => ({
       detalleCompraData: {
         id_proveedor: item.id_proveedor,
         id_producto: item.id_producto,
