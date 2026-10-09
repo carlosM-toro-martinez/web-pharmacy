@@ -8,6 +8,7 @@ import {
   MenuItem,
   Paper,
   Snackbar,
+  Stack,
   Table,
   TableBody,
   TableCell,
@@ -30,6 +31,9 @@ import ajustesLotesSobrevendidosService from "../../async/services/get/ajustesLo
 import ajustesSincronizarProductoService from "../../async/services/post/ajustesSincronizarProductoService";
 import ajustesSincronizarStockService from "../../async/services/post/ajustesSincronizarStockService";
 import ajustesRegistrosVaciosService from "../../async/services/get/ajustesRegistrosVaciosService";
+import ajustesVentasDuplicadasService from "../../async/services/get/ajustesVentasDuplicadasService";
+import generarExcelVentasDuplicadas from "./generarExcelVentasDuplicadas";
+import DownloadIcon from "@mui/icons-material/Download";
 import sucursalesService from "../../async/services/get/sucursalesService";
 import sucursalAddService from "../../async/services/post/sucursalAddService";
 import sucursalTransferirService from "../../async/services/post/sucursalTransferirService";
@@ -111,6 +115,21 @@ function Ajustes() {
   } = useQuery("ajustes-registros-vacios", ajustesRegistrosVaciosService, {
     enabled: false,
   });
+  const {
+    data: ventasDuplicadas,
+    isLoading: isLoadingVentasDuplicadas,
+    refetch: refetchVentasDuplicadas,
+  } = useQuery("ajustes-ventas-duplicadas", ajustesVentasDuplicadasService);
+  const [descargandoExcelDuplicadas, setDescargandoExcelDuplicadas] = useState(false);
+  const handleDescargarExcelDuplicadas = async () => {
+    if (!ventasDuplicadas?.productos?.length) return;
+    setDescargandoExcelDuplicadas(true);
+    try {
+      await generarExcelVentasDuplicadas(ventasDuplicadas);
+    } finally {
+      setDescargandoExcelDuplicadas(false);
+    }
+  };
   const {
     data: inventarioOrigen = [],
     isLoading: loadingInventarioOrigen,
@@ -287,6 +306,7 @@ function Ajustes() {
 
   const diferencias = stockComparacion?.diferencias || [];
   const descuadresPorSucursal = descuadreStock?.diferencias || [];
+  const productosDuplicadosList = ventasDuplicadas?.productos || [];
   const lotesSobrevendidosList = lotesSobrevendidos?.lotes || [];
   const inventariosVaciosList = registrosVacios?.inventariosVacios || [];
   const lotesVaciosBorrablesList = registrosVacios?.lotesVaciosBorrables || [];
@@ -393,6 +413,130 @@ function Ajustes() {
         >
           Ajustes y auditoria
         </Typography>
+
+        <Paper sx={{ p: 2, mb: 3, border: "2px solid #FF4500" }}>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              alignItems: "center",
+            }}
+          >
+            <Box>
+              <Typography sx={{ fontWeight: "bold", fontSize: "1.2rem" }}>
+                Stock a revisar fisicamente (ventas duplicadas)
+              </Typography>
+              <Typography color="text.secondary">
+                Productos donde se confirmo que una venta quedo registrada
+                dos veces en el sistema (mismo producto/lote repetido en una
+                sola venta), descontando el inventario el doble de lo
+                vendido. El cliente pago correctamente una sola vez; esto
+                solo afecta el stock, no el dinero. Esta lista es exacta
+                (no una estimacion): hay que contar fisicamente estos
+                productos y ajustar el stock en el sistema si corresponde.
+              </Typography>
+              {ventasDuplicadas && (
+                <Typography sx={{ mt: 1 }}>
+                  <strong style={{ color: "#d32f2f" }}>
+                    {ventasDuplicadas.totalProductosAfectados}
+                  </strong>{" "}
+                  producto(s)/sucursal afectado(s),{" "}
+                  <strong style={{ color: "#d32f2f" }}>
+                    {ventasDuplicadas.totalUnidadesDescontadasDeMas}
+                  </strong>{" "}
+                  unidad(es) descontada(s) de mas en total
+                </Typography>
+              )}
+            </Box>
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="outlined"
+                startIcon={
+                  isLoadingVentasDuplicadas ? (
+                    <CircularProgress size={16} />
+                  ) : (
+                    <RefreshIcon />
+                  )
+                }
+                onClick={() => refetchVentasDuplicadas()}
+                disabled={isLoadingVentasDuplicadas}
+              >
+                Actualizar
+              </Button>
+              <Button
+                variant="contained"
+                sx={{ backgroundColor: "#FF4500", "&:hover": { backgroundColor: "#CC3700" } }}
+                startIcon={
+                  descargandoExcelDuplicadas ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    <DownloadIcon />
+                  )
+                }
+                onClick={handleDescargarExcelDuplicadas}
+                disabled={descargandoExcelDuplicadas || !productosDuplicadosList.length}
+              >
+                Descargar Excel
+              </Button>
+            </Stack>
+          </Box>
+        </Paper>
+
+        {isLoadingVentasDuplicadas ? (
+          <Paper sx={{ p: 3, textAlign: "center", mb: 3 }}>
+            <CircularProgress />
+          </Paper>
+        ) : (
+          <TableContainer component={Paper} sx={{ mb: 4 }}>
+            <Table size="small">
+              <TableHead sx={{ backgroundColor: "#fff3e0" }}>
+                <TableRow>
+                  <TableCell>Producto</TableCell>
+                  <TableCell>Codigo</TableCell>
+                  <TableCell>Sucursal</TableCell>
+                  <TableCell align="right">Stock actual</TableCell>
+                  <TableCell align="right">Descontado de mas</TableCell>
+                  <TableCell align="right">Stock sugerido</TableCell>
+                  <TableCell>Ultima venta duplicada</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {productosDuplicadosList.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center">
+                      No hay productos con ventas duplicadas detectadas.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  productosDuplicadosList.map((p) => (
+                    <TableRow key={`${p.id_producto}-${p.id_sucursal}`} hover>
+                      <TableCell sx={{ fontWeight: "bold" }}>{p.nombre}</TableCell>
+                      <TableCell>{p.codigo_barra || "N/A"}</TableCell>
+                      <TableCell>{p.sucursal}</TableCell>
+                      <TableCell align="right">{p.stockReal}</TableCell>
+                      <TableCell
+                        align="right"
+                        sx={{ fontWeight: "bold", color: "#d32f2f" }}
+                      >
+                        +{p.unidadesDescontadasDeMas}
+                      </TableCell>
+                      <TableCell align="right" sx={{ fontWeight: "bold" }}>
+                        {p.stockSugerido}
+                      </TableCell>
+                      <TableCell>
+                        {p.fechaMasReciente
+                          ? new Date(p.fechaMasReciente).toLocaleDateString("es-BO")
+                          : "N/A"}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
 
         {isLoading ? (
           <Paper sx={{ p: 3, textAlign: "center" }}>
