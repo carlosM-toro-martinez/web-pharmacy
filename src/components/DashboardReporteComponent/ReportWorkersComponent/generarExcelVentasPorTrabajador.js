@@ -139,17 +139,17 @@ export async function generarExcelVentasPorTrabajador(reporte) {
   totalRowResumen.getCell(4).alignment = { horizontal: "right" };
   estilizarFilaTotal(totalRowResumen);
 
-  // ---------- Hoja Detalle ----------
+  // ---------- Hoja Detalle (producto por producto, no venta por venta) ----------
   const detalle = workbook.addWorksheet("Detalle de ventas", {
     views: [{ state: "frozen", ySplit: 5 }],
   });
   detalle.columns = [
     { key: "a", width: 4 },
     { key: "b", width: 30 },
-    { key: "c", width: 20 },
-    { key: "d", width: 26 },
+    { key: "c", width: 18 },
+    { key: "d", width: 34 },
     { key: "e", width: 18 },
-    { key: "f", width: 16 },
+    { key: "f", width: 12 },
     { key: "g", width: 18 },
   ];
   agregarEncabezado(detalle, logoImageId, "Detalle de ventas por trabajador", subtitulo);
@@ -158,28 +158,45 @@ export async function generarExcelVentasPorTrabajador(reporte) {
     "",
     "Trabajador",
     "Fecha",
-    "Cliente",
-    "Sucursal",
-    "Método de pago",
-    "Total (Bs.)",
+    "Producto",
+    "Precio de venta (Bs.)",
+    "Cantidad",
+    "Subtotal (Bs.)",
   ]);
   detalle.mergeCells(`B${headerRowDetalle.number}:B${headerRowDetalle.number}`);
   estilizarEncabezadoTabla(headerRowDetalle);
 
   for (const trabajador of reporte.trabajadores) {
     for (const venta of trabajador.ventas) {
-      const row = detalle.addRow([
-        "",
-        trabajador.nombre,
-        formatLapazDate(venta.fecha_venta, "datetime"),
-        venta.cliente,
-        venta.sucursal,
-        venta.metodo_pago,
-        venta.total,
-      ]);
-      row.getCell(7).numFmt = estiloMoneda;
-      row.getCell(7).alignment = { horizontal: "right" };
-      aplicarBordeFila(row);
+      const productos =
+        venta.productos && venta.productos.length
+          ? venta.productos
+          : [
+              {
+                nombre: "(venta sin detalle de productos)",
+                precio_unitario: venta.total,
+                cantidad: 1,
+                subtotal: venta.total,
+              },
+            ];
+
+      for (const producto of productos) {
+        const row = detalle.addRow([
+          "",
+          trabajador.nombre,
+          formatLapazDate(venta.fecha_venta, "datetime"),
+          producto.nombre,
+          producto.precio_unitario,
+          producto.cantidad,
+          producto.subtotal,
+        ]);
+        row.getCell(5).numFmt = estiloMoneda;
+        row.getCell(5).alignment = { horizontal: "right" };
+        row.getCell(6).alignment = { horizontal: "center" };
+        row.getCell(7).numFmt = estiloMoneda;
+        row.getCell(7).alignment = { horizontal: "right" };
+        aplicarBordeFila(row);
+      }
     }
 
     const subtotalRow = detalle.addRow([

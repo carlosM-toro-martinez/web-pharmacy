@@ -50,6 +50,7 @@ function ReportWorkersComponent() {
     desde: primerDiaDelMes(),
     hasta: hoy(),
     id_sucursal: "",
+    id_trabajador: "",
   });
   const [generandoExcel, setGenerandoExcel] = useState(false);
   const [errorExcel, setErrorExcel] = useState("");
@@ -196,9 +197,11 @@ function ReportWorkersComponent() {
             Exportar ventas por trabajador (Excel)
           </Typography>
           <Typography color="text.secondary" sx={{ mb: 2 }}>
-            Descarga un Excel con todas las ventas de cada trabajador en el
-            rango de fechas elegido, con el total por trabajador y el total
-            general.
+            Descarga un Excel con el desglose de ventas producto por
+            producto (con precio de venta) de cada trabajador en el rango
+            de fechas elegido, con el total por trabajador y el total
+            general. Filtra por un trabajador puntual si solo necesitas
+            el de uno.
           </Typography>
           <Stack
             direction={{ xs: "column", sm: "row" }}
@@ -240,6 +243,24 @@ function ReportWorkersComponent() {
                   {sucursal.nombre}
                 </MenuItem>
               ))}
+            </TextField>
+            <TextField
+              select
+              name="id_trabajador"
+              label="Trabajador"
+              value={excelFilters.id_trabajador}
+              onChange={handleExcelFilterChange}
+              size="small"
+              sx={{ minWidth: 220 }}
+            >
+              <MenuItem value="">Todos</MenuItem>
+              {data
+                ?.filter((t) => t.estado)
+                .map((t) => (
+                  <MenuItem key={t.id_trabajador} value={t.id_trabajador}>
+                    {t.nombre} {t.apellido_paterno} {t.apellido_materno}
+                  </MenuItem>
+                ))}
             </TextField>
             <Button
               variant="outlined"
