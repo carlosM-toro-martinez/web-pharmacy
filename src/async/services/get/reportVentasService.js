@@ -6,6 +6,7 @@ const reportVentasService = async (filters = {}) => {
   if (filters.desde) params.set("desde", filters.desde);
   if (filters.hasta) params.set("hasta", filters.hasta);
   if (filters.id_sucursal) params.set("id_sucursal", filters.id_sucursal);
+  if (filters.producto) params.set("producto", filters.producto);
 
   const query = params.toString() ? `?${params.toString()}` : "";
   return await get(`${buildApiUri()}/v1/reportes/ventas-reporte${query}`);

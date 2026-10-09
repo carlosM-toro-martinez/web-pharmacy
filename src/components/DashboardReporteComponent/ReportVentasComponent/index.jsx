@@ -37,6 +37,7 @@ const initialFilters = {
   desde: haceNDias(7),
   hasta: hoy(),
   id_sucursal: "",
+  producto: "",
 };
 
 function ReportVentasComponent() {
@@ -123,6 +124,15 @@ function ReportVentasComponent() {
                 </MenuItem>
               ))}
             </TextField>
+            <TextField
+              name="producto"
+              label="Buscar producto"
+              placeholder="Nombre o codigo de barra"
+              value={filters.producto}
+              onChange={handleChange}
+              size="small"
+              sx={{ minWidth: 220 }}
+            />
             <Button type="submit" variant="contained" startIcon={<RefreshIcon />}>
               Buscar
             </Button>
@@ -147,6 +157,12 @@ function ReportVentasComponent() {
               }
             >
               Este mes
+            </Button>
+            <Button
+              type="button"
+              onClick={() => aplicarPreset({ desde: "", hasta: "" })}
+            >
+              Todo el historial
             </Button>
           </Stack>
         </Paper>
