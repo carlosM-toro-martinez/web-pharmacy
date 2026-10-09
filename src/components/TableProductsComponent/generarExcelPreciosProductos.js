@@ -4,10 +4,12 @@ import logoUrl from "../../assets/images/logos/3.png";
 import { formatLapazDate } from "../../utils/dateUtils";
 
 const NARANJA = "FFFF4500";
+const NARANJA_CLARO = "FFFFE4D6";
 const BLANCO = "FFFFFFFF";
 const ROJO_CLARO = "FFFDE0E0";
 
 const estiloMoneda = "#,##0.00";
+const estiloNumero = "#,##0";
 
 const agregarEncabezado = (worksheet, logoImageId, titulo, subtitulo) => {
   worksheet.addImage(logoImageId, {
@@ -62,6 +64,17 @@ const aplicarBordeFila = (row) => {
   });
 };
 
+const estilizarFilaTotal = (row, color = NARANJA_CLARO) => {
+  row.eachCell((cell) => {
+    cell.font = { bold: true };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: color } };
+    cell.border = {
+      top: { style: "medium", color: { argb: NARANJA } },
+      bottom: { style: "medium", color: { argb: NARANJA } },
+    };
+  });
+};
+
 export async function generarExcelPreciosProductos(reporte) {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "Encuentra! Software Solutions";
@@ -89,8 +102,12 @@ export async function generarExcelPreciosProductos(reporte) {
     { key: "e", width: 18 },
     { key: "f", width: 20 },
     { key: "g", width: 20 },
-    { key: "h", width: 18 },
-    { key: "i", width: 14 },
+    { key: "h", width: 16 },
+    { key: "i", width: 13 },
+    { key: "j", width: 16 },
+    { key: "k", width: 20 },
+    { key: "l", width: 20 },
+    { key: "m", width: 20 },
   ];
   agregarEncabezado(
     hoja,
@@ -109,12 +126,19 @@ export async function generarExcelPreciosProductos(reporte) {
     "Precio de venta (Bs.)",
     "Utilidad (Bs.)",
     "Margen (%)",
+    "Stock actual (unid.)",
+    "Valor en costo (Bs.)",
+    "Valor en venta (Bs.)",
+    "Utilidad potencial (Bs.)",
   ]);
   hoja.mergeCells(`B${headerRow.number}:B${headerRow.number}`);
   estilizarEncabezadoTabla(headerRow);
 
   for (const producto of reporte.productos) {
     const tieneMargen = producto.margen !== null && producto.margen !== undefined;
+    const tieneUtilidadPotencial =
+      producto.utilidadPotencial !== null &&
+      producto.utilidadPotencial !== undefined;
     const row = hoja.addRow([
       "",
       producto.nombre || "N/A",
@@ -127,6 +151,10 @@ export async function generarExcelPreciosProductos(reporte) {
       producto.margenPorcentaje !== null && producto.margenPorcentaje !== undefined
         ? Number(producto.margenPorcentaje)
         : "",
+      Number(producto.stockActual || 0),
+      producto.valorCosto !== null ? Number(producto.valorCosto) : "",
+      producto.valorVenta !== null ? Number(producto.valorVenta) : "",
+      tieneUtilidadPotencial ? Number(producto.utilidadPotencial) : "",
     ]);
     row.getCell(6).numFmt = estiloMoneda;
     row.getCell(6).alignment = { horizontal: "right" };
@@ -136,6 +164,14 @@ export async function generarExcelPreciosProductos(reporte) {
     row.getCell(8).alignment = { horizontal: "right" };
     row.getCell(9).numFmt = "#,##0.00";
     row.getCell(9).alignment = { horizontal: "right" };
+    row.getCell(10).numFmt = estiloNumero;
+    row.getCell(10).alignment = { horizontal: "right" };
+    row.getCell(11).numFmt = estiloMoneda;
+    row.getCell(11).alignment = { horizontal: "right" };
+    row.getCell(12).numFmt = estiloMoneda;
+    row.getCell(12).alignment = { horizontal: "right" };
+    row.getCell(13).numFmt = estiloMoneda;
+    row.getCell(13).alignment = { horizontal: "right" };
     aplicarBordeFila(row);
 
     if (tieneMargen && Number(producto.margen) < 0) {
@@ -148,6 +184,32 @@ export async function generarExcelPreciosProductos(reporte) {
       });
     }
   }
+
+  const totales = reporte.totales || {};
+  const totalRow = hoja.addRow([
+    "",
+    "TOTAL GENERAL",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    Number(totales.stockActual || 0),
+    Number(totales.valorCosto || 0),
+    Number(totales.valorVenta || 0),
+    Number(totales.utilidadPotencial || 0),
+  ]);
+  totalRow.getCell(10).numFmt = estiloNumero;
+  totalRow.getCell(10).alignment = { horizontal: "right" };
+  totalRow.getCell(11).numFmt = estiloMoneda;
+  totalRow.getCell(11).alignment = { horizontal: "right" };
+  totalRow.getCell(12).numFmt = estiloMoneda;
+  totalRow.getCell(12).alignment = { horizontal: "right" };
+  totalRow.getCell(13).numFmt = estiloMoneda;
+  totalRow.getCell(13).alignment = { horizontal: "right" };
+  estilizarFilaTotal(totalRow);
 
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], {
