@@ -433,9 +433,14 @@ function Ajustes() {
                 dos veces en el sistema (mismo producto/lote repetido en una
                 sola venta), descontando el inventario el doble de lo
                 vendido. El cliente pago correctamente una sola vez; esto
-                solo afecta el stock, no el dinero. Esta lista es exacta
-                (no una estimacion): hay que contar fisicamente estos
-                productos y ajustar el stock en el sistema si corresponde.
+                solo afecta el stock, no el dinero. El &quot;faltante real
+                pendiente&quot; ya descuenta cualquier otra salida sin venta que
+                haya pasado despues (por el motivo que sea) y cualquier
+                compra registrada desde entonces — es el hueco que todavia
+                sigue sin explicarse hoy, no solo lo que la venta duplicada
+                resto en su momento. Productos donde ese hueco ya se cerro
+                (por una compra o ajuste posterior) no aparecen en esta
+                lista.
               </Typography>
               {ventasDuplicadas && (
                 <Typography sx={{ mt: 1 }}>
@@ -497,7 +502,7 @@ function Ajustes() {
                   <TableCell>Codigo</TableCell>
                   <TableCell>Sucursal</TableCell>
                   <TableCell align="right">Stock actual</TableCell>
-                  <TableCell align="right">Descontado de mas</TableCell>
+                  <TableCell align="right">Faltante real pendiente</TableCell>
                   <TableCell align="right">Stock sugerido</TableCell>
                   <TableCell>Ultima venta duplicada</TableCell>
                 </TableRow>
@@ -520,7 +525,7 @@ function Ajustes() {
                         align="right"
                         sx={{ fontWeight: "bold", color: "#d32f2f" }}
                       >
-                        +{p.unidadesDescontadasDeMas}
+                        +{p.faltanteReal}
                       </TableCell>
                       <TableCell align="right" sx={{ fontWeight: "bold" }}>
                         {p.stockSugerido}

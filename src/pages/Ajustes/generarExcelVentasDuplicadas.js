@@ -36,7 +36,7 @@ export async function generarExcelVentasDuplicadas(reporte) {
   titulo.font = { size: 15, bold: true };
   ws.mergeCells("B2:H2");
   const subtitulo = ws.getCell("B2");
-  subtitulo.value = `Generado el ${formatLapazDate(new Date(), "datetime")}  •  ${reporte.totalProductosAfectados} producto(s)/sucursal con posible descuadre  •  ${reporte.totalUnidadesDescontadasDeMas} unidad(es) descontada(s) de mas en total`;
+  subtitulo.value = `Generado el ${formatLapazDate(new Date(), "datetime")}  •  ${reporte.totalProductosAfectados} producto(s)/sucursal con faltante real pendiente  •  ${reporte.totalUnidadesDescontadasDeMas} unidad(es) en total (ya descuenta otras salidas/compras posteriores)`;
   subtitulo.font = { size: 10, italic: true, color: { argb: "FF666666" } };
   ws.getRow(1).height = 24;
   ws.getRow(2).height = 18;
@@ -48,7 +48,7 @@ export async function generarExcelVentasDuplicadas(reporte) {
     "Codigo",
     "Sucursal",
     "Stock actual en sistema",
-    "Unidades descontadas de mas",
+    "Faltante real pendiente",
     "Stock sugerido a verificar",
     "Ultima venta duplicada",
   ]);
@@ -65,7 +65,7 @@ export async function generarExcelVentasDuplicadas(reporte) {
       p.codigo_barra || "N/A",
       p.sucursal,
       p.stockReal,
-      p.unidadesDescontadasDeMas,
+      p.faltanteReal,
       p.stockSugerido,
       formatLapazDate(p.fechaMasReciente, "date"),
     ]);
