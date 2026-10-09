@@ -5,6 +5,7 @@ import { formatLapazDate } from "../../utils/dateUtils";
 
 const NARANJA = "FFFF4500";
 const BLANCO = "FFFFFFFF";
+const ROJO_CLARO = "FFFDE0E0";
 
 const estiloMoneda = "#,##0.00";
 
@@ -88,6 +89,8 @@ export async function generarExcelPreciosProductos(reporte) {
     { key: "e", width: 18 },
     { key: "f", width: 20 },
     { key: "g", width: 20 },
+    { key: "h", width: 18 },
+    { key: "i", width: 14 },
   ];
   agregarEncabezado(
     hoja,
@@ -104,11 +107,14 @@ export async function generarExcelPreciosProductos(reporte) {
     "Concentracion",
     "Precio de compra (Bs.)",
     "Precio de venta (Bs.)",
+    "Utilidad (Bs.)",
+    "Margen (%)",
   ]);
   hoja.mergeCells(`B${headerRow.number}:B${headerRow.number}`);
   estilizarEncabezadoTabla(headerRow);
 
   for (const producto of reporte.productos) {
+    const tieneMargen = producto.margen !== null && producto.margen !== undefined;
     const row = hoja.addRow([
       "",
       producto.nombre || "N/A",
@@ -117,12 +123,30 @@ export async function generarExcelPreciosProductos(reporte) {
       producto.concentracion || "",
       producto.precioCompra !== null ? Number(producto.precioCompra) : "",
       producto.precioVenta !== null ? Number(producto.precioVenta) : "",
+      tieneMargen ? Number(producto.margen) : "",
+      producto.margenPorcentaje !== null && producto.margenPorcentaje !== undefined
+        ? Number(producto.margenPorcentaje)
+        : "",
     ]);
     row.getCell(6).numFmt = estiloMoneda;
     row.getCell(6).alignment = { horizontal: "right" };
     row.getCell(7).numFmt = estiloMoneda;
     row.getCell(7).alignment = { horizontal: "right" };
+    row.getCell(8).numFmt = estiloMoneda;
+    row.getCell(8).alignment = { horizontal: "right" };
+    row.getCell(9).numFmt = "#,##0.00";
+    row.getCell(9).alignment = { horizontal: "right" };
     aplicarBordeFila(row);
+
+    if (tieneMargen && Number(producto.margen) < 0) {
+      row.eachCell((cell) => {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: ROJO_CLARO },
+        };
+      });
+    }
   }
 
   const buffer = await workbook.xlsx.writeBuffer();

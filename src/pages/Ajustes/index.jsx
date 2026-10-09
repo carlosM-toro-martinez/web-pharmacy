@@ -33,6 +33,7 @@ import ajustesSincronizarStockService from "../../async/services/post/ajustesSin
 import ajustesRegistrosVaciosService from "../../async/services/get/ajustesRegistrosVaciosService";
 import ajustesVentasDuplicadasService from "../../async/services/get/ajustesVentasDuplicadasService";
 import ajustesCorregirVentasDuplicadasService from "../../async/services/post/ajustesCorregirVentasDuplicadasService";
+import ajustesUtilidadesProductosService from "../../async/services/get/ajustesUtilidadesProductosService";
 import generarExcelVentasDuplicadas from "./generarExcelVentasDuplicadas";
 import BuildCircleIcon from "@mui/icons-material/BuildCircle";
 import DownloadIcon from "@mui/icons-material/Download";
@@ -107,6 +108,16 @@ function Ajustes() {
   } = useQuery(
     "ajustes-lotes-sobrevendidos",
     ajustesLotesSobrevendidosService,
+    { enabled: false }
+  );
+  const {
+    data: utilidadesProductos,
+    isLoading: isLoadingUtilidadesProductos,
+    isFetched: isFetchedUtilidadesProductos,
+    refetch: refetchUtilidadesProductos,
+  } = useQuery(
+    "ajustes-utilidades-productos",
+    ajustesUtilidadesProductosService,
     { enabled: false }
   );
   const {
@@ -381,6 +392,8 @@ function Ajustes() {
 
   const diferencias = stockComparacion?.diferencias || [];
   const descuadresPorSucursal = descuadreStock?.diferencias || [];
+  const productosUtilidadNegativa = utilidadesProductos?.productosUtilidadNegativa || [];
+  const productosSinPrecio = utilidadesProductos?.productosSinPrecio || [];
   const productosDuplicadosList = ventasDuplicadas?.productos || [];
   const lotesSobrevendidosList = lotesSobrevendidos?.lotes || [];
   const inventariosVaciosList = registrosVacios?.inventariosVacios || [];
@@ -1761,6 +1774,177 @@ function Ajustes() {
                 </TableBody>
               </Table>
             </TableContainer>
+
+            <Paper sx={{ p: 2, mb: 2, mt: 3 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 2,
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                }}
+              >
+                <Box>
+                  <Typography sx={{ fontWeight: "bold", fontSize: "1.2rem" }}>
+                    Utilidades negativas y precios faltantes
+                  </Typography>
+                  <Typography color="text.secondary">
+                    Compara el ultimo precio de compra contra el precio de
+                    venta actual de cada producto activo (todas las
+                    sucursales). Muestra los que se estan vendiendo a perdida
+                    (utilidad negativa) y los que no tienen precio de compra
+                    y/o de venta registrado (donde el margen no se puede
+                    calcular y daria NaN).
+                  </Typography>
+                  {isFetchedUtilidadesProductos && (
+                    <Typography sx={{ mt: 1 }}>
+                      <strong style={{ color: "#d32f2f" }}>
+                        {utilidadesProductos?.totalProductosUtilidadNegativa || 0}
+                      </strong>{" "}
+                      producto(s) con utilidad negativa,{" "}
+                      <strong style={{ color: "#ed6c02" }}>
+                        {utilidadesProductos?.totalProductosSinPrecio || 0}
+                      </strong>{" "}
+                      sin precio de compra y/o de venta
+                    </Typography>
+                  )}
+                </Box>
+                <Button
+                  variant="outlined"
+                  startIcon={
+                    isLoadingUtilidadesProductos ? (
+                      <CircularProgress size={16} />
+                    ) : (
+                      <RefreshIcon />
+                    )
+                  }
+                  onClick={() => refetchUtilidadesProductos()}
+                  disabled={loadingAction || isLoadingUtilidadesProductos}
+                >
+                  {isFetchedUtilidadesProductos
+                    ? "Verificar de nuevo"
+                    : "Verificar ahora"}
+                </Button>
+              </Box>
+            </Paper>
+
+            {isFetchedUtilidadesProductos && (
+              <>
+                <Typography sx={{ fontWeight: "bold", mb: 1 }}>
+                  Utilidad negativa (se vende mas barato de lo que cuesta)
+                </Typography>
+                <TableContainer component={Paper} sx={{ mb: 3 }}>
+                  <Table>
+                    <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
+                      <TableRow>
+                        <TableCell>Producto</TableCell>
+                        <TableCell>Codigo</TableCell>
+                        <TableCell>Forma farmaceutica</TableCell>
+                        <TableCell align="right">Precio de compra</TableCell>
+                        <TableCell align="right">Precio de venta</TableCell>
+                        <TableCell align="right">Margen (Bs.)</TableCell>
+                        <TableCell align="right">Margen (%)</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {productosUtilidadNegativa.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} align="center">
+                            No hay productos vendiendose a perdida.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        productosUtilidadNegativa.map((row) => (
+                          <TableRow key={row.id_producto} hover>
+                            <TableCell sx={{ fontWeight: "bold" }}>
+                              {row.nombre}
+                            </TableCell>
+                            <TableCell>{row.codigo_barra || "N/A"}</TableCell>
+                            <TableCell>
+                              {row.forma_farmaceutica || "N/A"}
+                            </TableCell>
+                            <TableCell align="right">
+                              Bs. {formatNumber(row.precioCompra)}
+                            </TableCell>
+                            <TableCell align="right">
+                              Bs. {formatNumber(row.precioVenta)}
+                            </TableCell>
+                            <TableCell
+                              align="right"
+                              sx={{ fontWeight: "bold", color: "#d32f2f" }}
+                            >
+                              Bs. {formatNumber(row.margen)}
+                            </TableCell>
+                            <TableCell
+                              align="right"
+                              sx={{ fontWeight: "bold", color: "#d32f2f" }}
+                            >
+                              {row.margenPorcentaje !== null
+                                ? `${formatNumber(row.margenPorcentaje)}%`
+                                : "N/A"}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+
+                <Typography sx={{ fontWeight: "bold", mb: 1 }}>
+                  Sin precio de compra y/o de venta
+                </Typography>
+                <TableContainer component={Paper} sx={{ mb: 3 }}>
+                  <Table>
+                    <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
+                      <TableRow>
+                        <TableCell>Producto</TableCell>
+                        <TableCell>Codigo</TableCell>
+                        <TableCell>Forma farmaceutica</TableCell>
+                        <TableCell align="right">Precio de compra</TableCell>
+                        <TableCell align="right">Precio de venta</TableCell>
+                        <TableCell>Motivo</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {productosSinPrecio.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} align="center">
+                            Todos los productos activos tienen precio de
+                            compra y de venta.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        productosSinPrecio.map((row) => (
+                          <TableRow key={row.id_producto} hover>
+                            <TableCell sx={{ fontWeight: "bold" }}>
+                              {row.nombre}
+                            </TableCell>
+                            <TableCell>{row.codigo_barra || "N/A"}</TableCell>
+                            <TableCell>
+                              {row.forma_farmaceutica || "N/A"}
+                            </TableCell>
+                            <TableCell align="right">
+                              {row.precioCompra !== null
+                                ? `Bs. ${formatNumber(row.precioCompra)}`
+                                : "N/A"}
+                            </TableCell>
+                            <TableCell align="right">
+                              {row.precioVenta !== null
+                                ? `Bs. ${formatNumber(row.precioVenta)}`
+                                : "N/A"}
+                            </TableCell>
+                            <TableCell sx={{ color: "#ed6c02" }}>
+                              {row.motivo}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </>
+            )}
           </>
         )}
       </Box>
