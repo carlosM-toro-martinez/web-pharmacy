@@ -22,19 +22,22 @@ export async function generarExcelVentasDuplicadas(reporte) {
     { key: "a", width: 6 },
     { key: "b", width: 34 },
     { key: "c", width: 14 },
-    { key: "d", width: 22 },
+    { key: "d", width: 18 },
     { key: "e", width: 16 },
-    { key: "f", width: 16 },
-    { key: "g", width: 16 },
-    { key: "h", width: 20 },
+    { key: "f", width: 20 },
+    { key: "g", width: 22 },
+    { key: "h", width: 16 },
+    { key: "i", width: 16 },
+    { key: "j", width: 16 },
+    { key: "k", width: 20 },
   ];
 
   ws.addImage(logoImageId, { tl: { col: 0.15, row: 0.15 }, ext: { width: 60, height: 60 } });
-  ws.mergeCells("B1:H1");
+  ws.mergeCells("B1:K1");
   const titulo = ws.getCell("B1");
   titulo.value = "Productos con stock a revisar (ventas duplicadas)";
   titulo.font = { size: 15, bold: true };
-  ws.mergeCells("B2:H2");
+  ws.mergeCells("B2:K2");
   const subtitulo = ws.getCell("B2");
   subtitulo.value = `Generado el ${formatLapazDate(new Date(), "datetime")}  •  ${reporte.totalProductosAfectados} producto(s)/sucursal con faltante real pendiente  •  ${reporte.totalUnidadesDescontadasDeMas} unidad(es) en total (ya descuenta otras salidas/compras posteriores)`;
   subtitulo.font = { size: 10, italic: true, color: { argb: "FF666666" } };
@@ -46,6 +49,9 @@ export async function generarExcelVentasDuplicadas(reporte) {
     "",
     "Producto",
     "Codigo",
+    "Forma farmaceutica",
+    "Concentracion",
+    "Proveedor",
     "Sucursal",
     "Stock actual en sistema",
     "Faltante real pendiente",
@@ -63,17 +69,20 @@ export async function generarExcelVentasDuplicadas(reporte) {
       "",
       p.nombre,
       p.codigo_barra || "N/A",
+      p.forma_farmaceutica || "N/A",
+      p.concentracion || "N/A",
+      p.proveedor || "N/A",
       p.sucursal,
       p.stockReal,
       p.faltanteReal,
       p.stockSugerido,
       formatLapazDate(p.fechaMasReciente, "date"),
     ]);
-    row.getCell(5).alignment = { horizontal: "center" };
-    row.getCell(6).alignment = { horizontal: "center" };
-    row.getCell(6).font = { bold: true, color: { argb: "FFD32F2F" } };
-    row.getCell(7).alignment = { horizontal: "center" };
-    row.getCell(7).font = { bold: true };
+    row.getCell(8).alignment = { horizontal: "center" };
+    row.getCell(9).alignment = { horizontal: "center" };
+    row.getCell(9).font = { bold: true, color: { argb: "FFD32F2F" } };
+    row.getCell(10).alignment = { horizontal: "center" };
+    row.getCell(10).font = { bold: true };
     row.eachCell((cell) => {
       cell.border = { top: bordeFino, bottom: bordeFino, left: bordeFino, right: bordeFino };
     });

@@ -115,11 +115,14 @@ function Ajustes() {
   } = useQuery("ajustes-registros-vacios", ajustesRegistrosVaciosService, {
     enabled: false,
   });
+  const [anioVentasDuplicadas, setAnioVentasDuplicadas] = useState("");
   const {
     data: ventasDuplicadas,
     isLoading: isLoadingVentasDuplicadas,
     refetch: refetchVentasDuplicadas,
-  } = useQuery("ajustes-ventas-duplicadas", ajustesVentasDuplicadasService);
+  } = useQuery(["ajustes-ventas-duplicadas", anioVentasDuplicadas], () =>
+    ajustesVentasDuplicadasService({ anio: anioVentasDuplicadas })
+  );
   const [descargandoExcelDuplicadas, setDescargandoExcelDuplicadas] = useState(false);
   const handleDescargarExcelDuplicadas = async () => {
     if (!ventasDuplicadas?.productos?.length) return;
@@ -455,7 +458,22 @@ function Ajustes() {
                 </Typography>
               )}
             </Box>
-            <Stack direction="row" spacing={1}>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <TextField
+                select
+                label="Año"
+                size="small"
+                value={anioVentasDuplicadas}
+                onChange={(e) => setAnioVentasDuplicadas(e.target.value)}
+                sx={{ minWidth: 120 }}
+              >
+                <MenuItem value="">Todos</MenuItem>
+                {(ventasDuplicadas?.aniosDisponibles || []).map((anio) => (
+                  <MenuItem key={anio} value={anio}>
+                    {anio}
+                  </MenuItem>
+                ))}
+              </TextField>
               <Button
                 variant="outlined"
                 startIcon={
@@ -500,6 +518,9 @@ function Ajustes() {
                 <TableRow>
                   <TableCell>Producto</TableCell>
                   <TableCell>Codigo</TableCell>
+                  <TableCell>Forma farmaceutica</TableCell>
+                  <TableCell>Concentracion</TableCell>
+                  <TableCell>Proveedor</TableCell>
                   <TableCell>Sucursal</TableCell>
                   <TableCell align="right">Stock actual</TableCell>
                   <TableCell align="right">Faltante real pendiente</TableCell>
@@ -510,7 +531,7 @@ function Ajustes() {
               <TableBody>
                 {productosDuplicadosList.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} align="center">
+                    <TableCell colSpan={10} align="center">
                       No hay productos con ventas duplicadas detectadas.
                     </TableCell>
                   </TableRow>
@@ -519,6 +540,9 @@ function Ajustes() {
                     <TableRow key={`${p.id_producto}-${p.id_sucursal}`} hover>
                       <TableCell sx={{ fontWeight: "bold" }}>{p.nombre}</TableCell>
                       <TableCell>{p.codigo_barra || "N/A"}</TableCell>
+                      <TableCell>{p.forma_farmaceutica || "N/A"}</TableCell>
+                      <TableCell>{p.concentracion || "N/A"}</TableCell>
+                      <TableCell>{p.proveedor || "N/A"}</TableCell>
                       <TableCell>{p.sucursal}</TableCell>
                       <TableCell align="right">{p.stockReal}</TableCell>
                       <TableCell
