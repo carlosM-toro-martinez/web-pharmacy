@@ -24,7 +24,7 @@ import productoDeleteServices from "../../async/services/delete/productoDeleteSe
 import { useMutation } from "react-query";
 import detalleCompraUpdateServices from "../../async/services/put/detalleCompraUpdateServices";
 import detalleCompraDeleteServices from "../../async/services/delete/detalleCompraDeleteServices";
-import { Button } from "@mui/material";
+import { Button, Checkbox, FormControlLabel, Typography } from "@mui/material";
 import ProductoModalComponent from "../RegisterBuyComponent/ProductoModalComponent";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -59,6 +59,7 @@ export default function TableProductsComponent({
   const [openProductoModal, setOpenProductoModal] = useState(false);
   const [showMissingOnly, setShowMissingOnly] = useState(false);
   const [generandoExcelPrecios, setGenerandoExcelPrecios] = useState(false);
+  const [incluirHojasPorSucursal, setIncluirHojasPorSucursal] = useState(false);
 
   const handleOpenProductoModal = () => setOpenProductoModal(true);
   const handleCloseProductoModal = () => setOpenProductoModal(false);
@@ -213,7 +214,9 @@ export default function TableProductsComponent({
     setGenerandoExcelPrecios(true);
     try {
       const reporte = await reportPreciosProductosService();
-      await generarExcelPreciosProductos(reporte);
+      await generarExcelPreciosProductos(reporte, {
+        incluirPorSucursal: incluirHojasPorSucursal,
+      });
     } catch (error) {
       console.error("Error al generar el reporte de precios:", error);
     } finally {
@@ -377,7 +380,7 @@ export default function TableProductsComponent({
           labelRowsPerPage="Filas por página"
         />
       </Paper>
-      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
         <Button variant="outlined" color="success" onClick={handleExportToExcel}>
           Descargar Excel
         </Button>
@@ -396,7 +399,20 @@ export default function TableProductsComponent({
             ? "Generando..."
             : "Excel: precios de compra y venta (todas las sucursales)"}
         </Button>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={incluirHojasPorSucursal}
+              onChange={(e) => setIncluirHojasPorSucursal(e.target.checked)}
+            />
+          }
+          label="Agregar una hoja por cada sucursal"
+        />
       </Box>
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+        El Excel de precios siempre excluye los productos sin precio de
+        compra o sin precio de venta registrado.
+      </Typography>
 
       {openUpdateModal && (
         <ModalUpdateProduct

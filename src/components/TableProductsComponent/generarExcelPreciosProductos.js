@@ -75,23 +75,12 @@ const estilizarFilaTotal = (row, color = NARANJA_CLARO) => {
   });
 };
 
-export async function generarExcelPreciosProductos(reporte) {
-  const workbook = new ExcelJS.Workbook();
-  workbook.creator = "Encuentra! Software Solutions";
-  workbook.created = new Date();
-
-  const logoBuffer = await fetch(logoUrl).then((r) => r.arrayBuffer());
-  const logoImageId = workbook.addImage({
-    buffer: logoBuffer,
-    extension: "png",
-  });
-
-  const subtitulo = `Todas las sucursales  •  Generado el ${formatLapazDate(
-    reporte.generadoEl || new Date(),
-    "datetime"
-  )}  •  ${reporte.productos.length} producto(s)`;
-
-  const hoja = workbook.addWorksheet("Precios de productos", {
+const agregarHojaPrecios = (
+  workbook,
+  logoImageId,
+  { nombreHoja, titulo, subtitulo, productos, totales }
+) => {
+  const hoja = workbook.addWorksheet(nombreHoja, {
     views: [{ state: "frozen", ySplit: 5 }],
   });
   hoja.columns = [
@@ -109,12 +98,7 @@ export async function generarExcelPreciosProductos(reporte) {
     { key: "l", width: 20 },
     { key: "m", width: 20 },
   ];
-  agregarEncabezado(
-    hoja,
-    logoImageId,
-    "Reporte de precios de productos",
-    subtitulo
-  );
+  agregarEncabezado(hoja, logoImageId, titulo, subtitulo);
 
   const headerRow = hoja.addRow([
     "",
@@ -134,27 +118,23 @@ export async function generarExcelPreciosProductos(reporte) {
   hoja.mergeCells(`B${headerRow.number}:B${headerRow.number}`);
   estilizarEncabezadoTabla(headerRow);
 
-  for (const producto of reporte.productos) {
-    const tieneMargen = producto.margen !== null && producto.margen !== undefined;
-    const tieneUtilidadPotencial =
-      producto.utilidadPotencial !== null &&
-      producto.utilidadPotencial !== undefined;
+  for (const producto of productos) {
     const row = hoja.addRow([
       "",
       producto.nombre || "N/A",
       producto.codigo_barra || "",
       producto.forma_farmaceutica || "",
       producto.concentracion || "",
-      producto.precioCompra !== null ? Number(producto.precioCompra) : "",
-      producto.precioVenta !== null ? Number(producto.precioVenta) : "",
-      tieneMargen ? Number(producto.margen) : "",
+      Number(producto.precioCompra),
+      Number(producto.precioVenta),
+      Number(producto.margen),
       producto.margenPorcentaje !== null && producto.margenPorcentaje !== undefined
         ? Number(producto.margenPorcentaje)
         : "",
       Number(producto.stockActual || 0),
-      producto.valorCosto !== null ? Number(producto.valorCosto) : "",
-      producto.valorVenta !== null ? Number(producto.valorVenta) : "",
-      tieneUtilidadPotencial ? Number(producto.utilidadPotencial) : "",
+      Number(producto.valorCosto),
+      Number(producto.valorVenta),
+      Number(producto.utilidadPotencial),
     ]);
     row.getCell(6).numFmt = estiloMoneda;
     row.getCell(6).alignment = { horizontal: "right" };
@@ -174,7 +154,7 @@ export async function generarExcelPreciosProductos(reporte) {
     row.getCell(13).alignment = { horizontal: "right" };
     aplicarBordeFila(row);
 
-    if (tieneMargen && Number(producto.margen) < 0) {
+    if (Number(producto.margen) < 0) {
       row.eachCell((cell) => {
         cell.fill = {
           type: "pattern",
@@ -185,7 +165,6 @@ export async function generarExcelPreciosProductos(reporte) {
     }
   }
 
-  const totales = reporte.totales || {};
   const totalRow = hoja.addRow([
     "",
     "TOTAL GENERAL",
@@ -210,6 +189,48 @@ export async function generarExcelPreciosProductos(reporte) {
   totalRow.getCell(13).numFmt = estiloMoneda;
   totalRow.getCell(13).alignment = { horizontal: "right" };
   estilizarFilaTotal(totalRow);
+};
+
+const nombreHojaValido = (nombre) =>
+  nombre.replace(/[*?:/\\[\]]/g, "").slice(0, 31) || "Sucursal";
+
+export async function generarExcelPreciosProductos(
+  reporte,
+  { incluirPorSucursal = false } = {}
+) {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "Encuentra! Software Solutions";
+  workbook.created = new Date();
+
+  const logoBuffer = await fetch(logoUrl).then((r) => r.arrayBuffer());
+  const logoImageId = workbook.addImage({
+    buffer: logoBuffer,
+    extension: "png",
+  });
+
+  const generadoTexto = formatLapazDate(reporte.generadoEl || new Date(), "datetime");
+  const notaExcluidos =
+    "Solo productos con precio de compra y de venta registrados";
+
+  agregarHojaPrecios(workbook, logoImageId, {
+    nombreHoja: "Todas las sucursales",
+    titulo: "Reporte de precios de productos",
+    subtitulo: `Todas las sucursales  •  Generado el ${generadoTexto}  •  ${reporte.productos.length} producto(s)  •  ${notaExcluidos}`,
+    productos: reporte.productos,
+    totales: reporte.totales,
+  });
+
+  if (incluirPorSucursal) {
+    for (const sucursal of reporte.sucursales || []) {
+      agregarHojaPrecios(workbook, logoImageId, {
+        nombreHoja: nombreHojaValido(sucursal.nombre),
+        titulo: `Reporte de precios de productos - ${sucursal.nombre}`,
+        subtitulo: `Sucursal ${sucursal.nombre}  •  Generado el ${generadoTexto}  •  ${sucursal.productos.length} producto(s)  •  ${notaExcluidos}`,
+        productos: sucursal.productos,
+        totales: sucursal.totales,
+      });
+    }
+  }
 
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], {
