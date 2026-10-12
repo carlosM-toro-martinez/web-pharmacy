@@ -33,6 +33,25 @@ const buildOptions = (payload, method, isFile) => {
   return options;
 };
 
+// Si el token ya caducó (o es invalido), el backend responde 401 en
+// cualquier endpoint. Antes esto solo tiraba un Error que cada pantalla
+// manejaba (o no) a su manera, asi que la pantalla se quedaba mostrando
+// datos viejos en memoria como si la sesion siguiera activa — eso fue lo
+// que paso con la venta sin sucursal: el cajero siguio vendiendo con la
+// sesion vencida porque nada lo mando de vuelta al login. Se maneja aca,
+// en el unico lugar por el que pasan todas las peticiones, para que
+// cualquier 401 cierre la sesion y redirija sin depender de que cada
+// componente lo detecte por su cuenta.
+const manejarSesionExpirada = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  localStorage.removeItem("sucursal");
+  localStorage.removeItem("superAdmin");
+  if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+    window.location.href = "/login";
+  }
+};
+
 const request = async (endpoint, payload, method, isFile) => {
   const options = buildOptions(payload, method, isFile);
   const response = await fetch(endpoint, options);
@@ -44,6 +63,9 @@ const request = async (endpoint, payload, method, isFile) => {
       return error;
     }
   } else {
+    if (response.status === 401) {
+      manejarSesionExpirada();
+    }
     let message = `Error ${response.status}`;
     try {
       const body = await response.json();

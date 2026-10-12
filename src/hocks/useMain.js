@@ -31,6 +31,18 @@ function useMain() {
     { enabled: Boolean(token && sucursal?.id_sucursal) }
   );
 
+  const cerrarSesionPorTokenVencido = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("sucursal");
+    localStorage.removeItem("superAdmin");
+    setToken(null);
+    setUser(null);
+    setSucursal(null);
+    setSuperAdmin(null);
+    setAuth(false);
+  };
+
   const { data: status, refetch: checkToken } = useQuery(
     "token-status",
     async () => {
@@ -54,27 +66,37 @@ function useMain() {
       enabled: !!token,
       retry: false,
 
+      // Antes, un token ya invalido/rechazado por el backend (no solo
+      // "remainingSeconds: 0") caia aca y no hacia nada mas que loguearlo
+      // en consola — la sesion se quedaba "viva" en el navegador aunque el
+      // backend ya no la reconociera. Ahora cualquier error tambien cierra
+      // la sesion, igual que cuando el tiempo restante llega a 0.
       onError: (err) => {
         console.log(err);
+        cerrarSesionPorTokenVencido();
       },
       onSuccess: (res) => {
         if (res?.remainingSeconds === 0) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          localStorage.removeItem("sucursal");
-          setToken(null);
-          setUser(null);
-          setSucursal(null);
-          setAuth(false);
+          cerrarSesionPorTokenVencido();
         }
       },
     }
   );
 
+  // Antes esto solo se revisaba una vez, al cargar la pagina o cambiar de
+  // token — si la sesion caducaba mientras alguien seguia con la pestaña
+  // abierta (ej. un cajero vendiendo), nada lo detectaba hasta el proximo
+  // refresh, y mientras tanto el sistema seguia dejando operar con una
+  // sesion ya vencida (eso genero una venta sin sucursal, porque el
+  // contexto del trabajador ya no era confiable). Revisando cada minuto se
+  // detecta la caducidad mientras la pantalla sigue abierta.
   useEffect(() => {
-    if (token) {
-      const resp = checkToken();
-    }
+    if (!token) return;
+    checkToken();
+    const intervalo = setInterval(() => {
+      checkToken();
+    }, 60 * 1000);
+    return () => clearInterval(intervalo);
   }, [token, checkToken]);
 
   useEffect(() => {

@@ -36,7 +36,7 @@ function DashboardVentaComponent({
   const denominacionFormRef = useRef(null);
 
   const classes = useStyles();
-  const { user } = useContext(MainContext);
+  const { user, sucursal } = useContext(MainContext);
 
   const [ventaData, setVentaData] = useState({
     id_trabajador: user?.id_trabajador,
@@ -147,7 +147,15 @@ function DashboardVentaComponent({
           total: totalPrice,
           id_cliente: ventaData.clienteId,
           id_trabajador: ventaData.id_trabajador,
-          id_sucursal: caja?.caja?.id_sucursal || user?.id_sucursal || null,
+          // "sucursal" (el contexto que se ve arriba en pantalla y que
+          // persiste en localStorage) es la fuente mas confiable: caja/user
+          // pueden llegar vacios si la sesion esta a medio caducar, y eso
+          // dejaba la venta sin sucursal (ver DashboardVentaComponent).
+          id_sucursal:
+            sucursal?.id_sucursal ||
+            caja?.caja?.id_sucursal ||
+            user?.id_sucursal ||
+            null,
           rebaja_aplicada: 0,
           descuento_fidelidad_aplicado: 0,
           metodo_pago: metodoPago,
